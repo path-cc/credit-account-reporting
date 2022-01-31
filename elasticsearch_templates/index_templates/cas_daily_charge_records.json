@@ -1,0 +1,28 @@
+{
+    "index_patterns": [
+        "cas-daily-charge-records-*"
+    ],
+    "template": {
+        "settings": {
+            "index": {
+                "lifecycle": {
+                    "name": "cas-daily-charge-records-ilm",
+                    "rollover_alias": "cas-daily-charge-records"
+                },
+                "number_of_shards": "1",
+                "number_of_replicas": "0"
+            }
+        },
+        "mappings": {
+            "properties": {
+                "account_id": {"type": "keyword"},
+                "date": {
+                    "type": "date", 
+                    "format": "strict_date_optional_time||epoch_second"
+                },
+                "resource_name": {"type": "keyword"},
+                "total_charges": {"type": "double"}
+            }
+        }
+    }
+}

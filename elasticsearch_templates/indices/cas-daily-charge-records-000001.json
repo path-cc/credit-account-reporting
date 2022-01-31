@@ -1,0 +1,7 @@
+{
+    "aliases": {
+        "cas-daily-charge-records": {
+            "is_write_index": true
+        }
+    }
+}

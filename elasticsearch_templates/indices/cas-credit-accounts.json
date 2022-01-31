@@ -1,0 +1,26 @@
+{
+    "settings": {
+        "index": {
+            "number_of_shards": 1,
+            "number_of_replicas": 0
+        }
+    },
+    "mappings": {
+        "properties": {
+            "account_id": {"type": "keyword"},
+            "owner": {"type": "keyword"},
+            "owner_email": {"type": "keyword"},
+            "type": {"type": "keyword"},
+            "total_credits": {"type": "double"},
+            "total_charges": {"type": "double"},
+            "last_credit_date": {
+                "type": "date", 
+                "format": "strict_date_optional_time||epoch_second"
+            },
+            "last_charge_date": {
+                "type": "date", 
+                "format": "strict_date_optional_time||epoch_second"
+            }
+        }
+    }
+}
