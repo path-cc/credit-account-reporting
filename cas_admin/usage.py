@@ -1,5 +1,6 @@
 import click
 import sys
+from datetime import timedelta
 from collections import OrderedDict
 from operator import itemgetter
 from elasticsearch.helpers import scan
@@ -9,7 +10,7 @@ import cas_admin.cost_functions as cost_functions
 
 
 def display_charges(
-    es_client, start_ts, end_ts, account=None, index="cas-daily-charge-records-*"
+    es_client, start_date, end_date, account=None, index="cas-daily-charge-records-*"
 ):
     """Displays charges given a time range"""
 
@@ -20,7 +21,7 @@ def display_charges(
     columns["resource_name"] = "Resource"
 
     charge_data = get_charge_data(
-        es_client, start_ts, end_ts, account=account, index=index
+        es_client, start_date, end_date, account=account, index=index
     )
     if len(charge_data) == 0:
         click.echo(f"ERROR: No charge records found in index '{index}'", err=True)
@@ -60,11 +61,9 @@ def display_charges(
         click.echo(" ".join(items))
 
 
-def compute_charges(
+def compute_daily_charges(
     es_client,
-    start_ts,
-    end_ts,
-    account=None,
+    date,
     account_index="cas-credit-accounts",
     usage_index="osg-schedd-*",
     charge_index="cas-daily-charge-records",
@@ -87,7 +86,11 @@ def compute_charges(
 
         match_terms = {"CreditAccount": account_row["account_id"]}
         for usage_row in get_usage_data(
-            es_client, start_ts, end_ts, match_terms=match_terms, index=usage_index
+            es_client,
+            date,
+            date + timedelta(days=1),
+            match_terms=match_terms,
+            index=usage_index,
         ):
             this_charge = cost_function(usage_row)
             if this_charge < 0:
@@ -102,15 +105,17 @@ def compute_charges(
         if charge < 1e-8:
             continue
 
-        # Create account obj
+        # Create charge doc
         charge_doc = {
             "account_id": account_row["account_id"],
-            "date": start_ts,
+            "date": str(date),
             "resource_name": usage_row[resource_name_attr],
             "total_charges": cost,
         }
-        doc_id = f"{account_row['account_id']}#{start_ts}"
+        doc_id = f"{account_row['account_id']}#{date}"
 
         # Upload account
         if not dry_run:
             es_client.index(index=charge_index, id=doc_id, body=charge_doc)
+        else:
+            click.echo(f"Dry run, not indexing doc with id '{doc_id}'")

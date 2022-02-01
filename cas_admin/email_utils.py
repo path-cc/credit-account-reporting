@@ -5,7 +5,7 @@ import smtplib
 import dns.resolver
 from operator import itemgetter
 from collections import OrderedDict
-from datetime import datetime, timedelta
+from datetime import timedelta
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.mime.base import MIMEBase
@@ -81,8 +81,7 @@ def send_email(
 
 def generate_weekly_accounts_report(
     es_client,
-    start_ts,
-    end_ts,
+    starting_week_date,
     xlsx_directory=Path("./weekly_accounts_report"),
     index="cas-credit-accounts",
 ):
@@ -97,7 +96,7 @@ def generate_weekly_accounts_report(
     columns["total_charges"] = "Total Charges"
     columns["remaining_credits"] = "Remaining Credits"
 
-    date_str = datetime.fromtimestamp(start_ts).strftime("%Y-%m-%d")
+    date_str = str(starting_week_date)
 
     xlsx_directory.mkdir(parents=True, exist_ok=True)
     xlsx_file = xlsx_directory / f"cas-weekly-account-report_{date_str}.xlsx"
@@ -170,8 +169,7 @@ def generate_weekly_accounts_report(
 def generate_weekly_account_owner_report(
     es_client,
     account,
-    start_ts,
-    end_ts,
+    starting_week_date,
     xlsx_directory=Path("./weekly_accounts_report_by_account"),
     snapshot_directory=Path("./weekly_accounts_snapshots"),
     index="cas-credit-accounts",
@@ -188,7 +186,7 @@ def generate_weekly_account_owner_report(
     columns["owner"] = "Account Owner"
     columns["owner_email"] = "Account Owner Email"
 
-    date_str = datetime.fromtimestamp(start_ts).strftime("%Y-%m-%d")
+    date_str = str(starting_week_date)
 
     xlsx_directory = xlsx_directory / account
     xlsx_directory.mkdir(parents=True, exist_ok=True)
@@ -267,9 +265,7 @@ def generate_weekly_account_owner_report(
     html += "</tr>\n"
 
     # Read from snapshot if available
-    last_date_str = (datetime.fromtimestamp(start_ts) - timedelta(days=7)).strftime(
-        "%Y-%m-%d"
-    )
+    last_date_str = str(starting_week_date - timedelta(days=7))
     last_snapshot_file = (
         snapshot_directory / f"cas-weekly-account-report_{last_date_str}.json"
     )

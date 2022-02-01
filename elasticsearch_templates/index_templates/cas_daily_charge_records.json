@@ -18,7 +18,7 @@
                 "account_id": {"type": "keyword"},
                 "date": {
                     "type": "date", 
-                    "format": "strict_date_optional_time||epoch_second"
+                    "format": "strict_date"
                 },
                 "resource_name": {"type": "keyword"},
                 "total_charges": {"type": "double"}

@@ -1,6 +1,7 @@
 import click
 import time
 import sys
+from datetime import date
 from collections import OrderedDict
 from operator import itemgetter
 
@@ -123,7 +124,7 @@ def add_account(
     owner,
     email,
     account_type,
-    credits=0,
+    credts=0,
     index="cas-credit-accounts",
 ):
     """Adds account"""
@@ -137,9 +138,9 @@ def add_account(
         )
         sys.exit(1)
     try:
-        credits = float(credits)
+        credts = float(credts)
     except ValueError:
-        click.echo(f"ERROR: Non-numeric credits provided: {credits}", err=True)
+        click.echo(f"ERROR: Non-numeric credits provided: {credts}", err=True)
 
     # Check existing
     if len(query_account(es_client, account=account, index=index)["hits"]["hits"]) > 0:
@@ -154,9 +155,9 @@ def add_account(
         "owner": owner,
         "owner_email": email,
         "type": account_type,
-        "total_credits": credits,
+        "total_credits": credts,
         "total_charges": 0,
-        "last_credit_date": int(time.time()),
+        "last_credit_date": str(date.today()),
     }
     doc_id = account
 
@@ -221,21 +222,21 @@ def add_credits(es_client, account, credts, index="cas-credit-accounts"):
     doc_id = existing_account_results["hits"]["hits"][0]["_id"]
     account_info = existing_account_results["hits"]["hits"][0]["_source"]
     account_info["total_credits"] += credts
-    account_info["last_credit_date"] = int(time.time())
+    account_info["last_credit_date"] = str(date.today())
 
     # Upload account
     es_client.index(index=index, id=doc_id, body=account_info)
     click.echo(f"Account {account} updated.")
 
 
-def edit_credits(es_client, account, credits, index="cas-credit-accounts"):
+def edit_credits(es_client, account, credts, index="cas-credit-accounts"):
     """Adds credits to account"""
 
     # Check input
     try:
-        credits = float(credits)
+        credts = float(credts)
     except ValueError:
-        click.echo(f"Non-numeric credits provided: {credits}", err=True)
+        click.echo(f"Non-numeric credits provided: {credts}", err=True)
 
     # Check existing
     existing_account_results = query_account(es_client, account=account, index=index)
@@ -251,8 +252,8 @@ def edit_credits(es_client, account, credits, index="cas-credit-accounts"):
     # Update account obj
     doc_id = existing_account_results["hits"]["hits"][0]["_id"]
     account_info = existing_account_results["hits"]["hits"][0]["_source"]
-    account_info["credits"] = credits
-    account_info["last_credit_date"] = int(time.time())
+    account_info["credits"] = credts
+    account_info["last_credit_date"] = str(date.today())
 
     # Upload account
     es_client.index(index=index, id=doc_id, body=account_info)
@@ -289,9 +290,7 @@ def edit_charges(es_client, account, charges, index="cas-credit-accounts"):
     click.echo(f"Account {account} updated.")
 
 
-def add_charges(
-    es_client, account, charges, date=int(time.time()), index="cas-credit-accounts"
-):
+def add_charges(es_client, account, charges, index="cas-credit-accounts"):
     """Adds charges to account"""
 
     # Check input
@@ -326,14 +325,14 @@ def add_charges(
 
 def update_total_charges(
     es_client,
-    start_ts,
-    end_ts,
+    start_date,
+    end_date,
     charge_index="cas-daily-charge-records-*",
     account_index="cas-credit-accounts",
 ):
 
     # Loop over charges from time period
-    charge_data = get_charge_data(es_client, start_ts, end_ts, index=charge_index)
+    charge_data = get_charge_data(es_client, start_date, end_date, index=charge_index)
     charge_data.sort(key=itemgetter("date", "account_id"))
     for charge in charge_data:
 

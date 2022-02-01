@@ -1,15 +1,20 @@
 from elasticsearch.helpers import scan
+from datetime import datetime
 
 
 def query_charges(
-    es_client, start_ts, end_ts, account=None, index="cas-daily-charge-records-*"
+    es_client, start_date, end_date, account=None, index="cas-daily-charge-records-*"
 ):
     """Returns iterator of charges given a time range"""
 
     query = {"index": index, "scroll": "30s", "size": 1000, "body": {}}
 
     query["body"]["query"] = {
-        "bool": {"filter": [{"range": {"date": {"gte": start_ts, "lt": end_ts}}}]}
+        "bool": {
+            "filter": [
+                {"range": {"date": {"gte": str(start_date), "lt": str(end_date)}}}
+            ]
+        }
     }
 
     if account is not None:
@@ -21,8 +26,13 @@ def query_charges(
         yield doc
 
 
-def query_usage(es_client, start_ts, end_ts, match_terms={}, index="osg-schedd-*"):
+def query_usage(es_client, start_date, end_date, match_terms={}, index="osg-schedd-*"):
     """Returns iterator of usage given an account and a time range"""
+
+    # Convert date objects to timestamps
+    date2ts = lambda d: int(datetime(d.year, d.month, d.day).timestamp())
+    start_ts = date2ts(start_date)
+    end_ts = date2ts(end_date)
 
     query = {"index": index, "scroll": "30s", "size": 1000, "body": {}}
 
@@ -42,13 +52,18 @@ def query_usage(es_client, start_ts, end_ts, match_terms={}, index="osg-schedd-*
 
 
 def get_charge_data(
-    es_client, start_ts, end_ts, account=None, addl_cols=[], index="cas-credit-accounts"
+    es_client,
+    start_date,
+    end_date,
+    account=None,
+    addl_cols=[],
+    index="cas-credit-accounts",
 ):
     """Returns rows of account data"""
 
     rows = []
     for charge_info in query_charges(
-        es_client, start_ts, end_ts, account=account, index=index
+        es_client, start_date, end_date, account=account, index=index
     ):
         row = account_info["_source"]
 
@@ -63,7 +78,7 @@ def get_charge_data(
 
 
 def get_usage_data(
-    es_client, start_ts, end_ts, match_terms={}, addl_cols=[], index="osg-schedd-*"
+    es_client, start_date, end_date, match_terms={}, addl_cols=[], index="osg-schedd-*"
 ):
     """Returns rows of usage data"""
 
@@ -85,7 +100,9 @@ def get_usage_data(
     cols = default_cols + addl_cols
 
     rows = []
-    for charge_info in query_usage(es_client, start_ts, end_ts, user=user, index=index):
+    for charge_info in query_usage(
+        es_client, start_date, end_date, user=user, index=index
+    ):
         row_in = account_info["_source"]
         row_out = {}
 

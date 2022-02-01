@@ -15,11 +15,11 @@
             "total_charges": {"type": "double"},
             "last_credit_date": {
                 "type": "date", 
-                "format": "strict_date_optional_time||epoch_second"
+                "format": "strict_date"
             },
             "last_charge_date": {
                 "type": "date", 
-                "format": "strict_date_optional_time||epoch_second"
+                "format": "strict_date"
             }
         }
     }

@@ -1,16 +1,6 @@
 import click
 from datetime import datetime, timedelta
 
-# Public commands:
-# 1. Create account
-# 2. Create user
-# 3. Edit account (owner name and email)
-# 4. Edit user (permitted credit accounts)
-# 5. Add credits
-# 6. Get accounts
-# 7. Get users
-# 8. Get charges
-
 from cas_admin.connect import connect
 from cas_admin.account import (
     add_account,
@@ -27,7 +17,10 @@ from cas_admin.user import (
 )
 from cas_admin.usage import display_charges
 
-YESTERDAY = (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d")
+# Using a datetime.datetime object here since click does not generate
+# datetime.date objects when using click.DateTime() for option type.
+# This will get converted to a datetime.date object later.
+YESTERDAY = datetime.now() - timedelta(days=1)
 
 
 @click.group()
@@ -161,18 +154,16 @@ def get_users(es_client, name, es_index):
 
 
 @get.command("charges")
-@click.option("--start_date", default=YESTERDAY)
-@click.option("--end_date", default=YESTERDAY)
+@click.option("--date", type=click.DateTime(formats=["%Y-%m-%d"]), default=YESTERDAY)
 @click.option("--account", type=str, default=None)
 @click.option("--es_index", default="cas-daily-charge-records-*")
 @click.pass_obj
 def get_charges(es_client, start_date, end_date, account, es_index):
-    start_ts = int(datetime.strptime(start_date, "%Y-%m-%d").timestamp())
-    # make the end inclusive by adding a day
-    end_ts = int(
-        (datetime.strptime(end_date, "%Y-%m-%d") + timedelta(days=1)).timestamp()
-    )
-    display_charges(es_client, start_ts, end_ts, account, es_index)
+    """Displays all charges accrued by account(s) on a given date.
+    Defaults to displaying yesterday's charges if --date is not set."""
+    start_date = date.date()
+    end_date = start_date + timedelta(days=1)
+    display_charges(es_client, start_date, end_date, account, es_index)
 
 
 if __name__ == "__main__":
