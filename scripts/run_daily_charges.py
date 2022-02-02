@@ -4,7 +4,7 @@ import json
 from pathlib import Path
 from datetime import date, timedelta
 from cas_admin.connect import connect
-from cas_admin.usage import compute_charges
+from cas_admin.usage import compute_daily_charges, apply_daily_charges
 from cas_admin.query_utils import query_account
 
 START = date(2022, 1, 25)
@@ -24,7 +24,7 @@ def snapshot_accounts(es_client, index, snapshot_dir, this_date, dry_run=False):
         sys.exit(1)
     if not dry_run:
         with snapshot_file.open("w") as f:
-            json.dump(account_data["hits"]["hits"])
+            json.dump(account_data["hits"]["hits"], f, indent=2)
     else:
         click.echo(
             f"Dry run, not writing {len(account_data['hits']['hits'])} account records to {snapshot_file}"
@@ -93,6 +93,13 @@ def main(
             missing_snapshot_date,
             account_index,
             usage_index,
+            charge_index,
+            dry_run,
+        )
+        apply_daily_charges(
+            es_client,
+            missing_snapshot_date,
+            account_index,
             charge_index,
             dry_run,
         )
