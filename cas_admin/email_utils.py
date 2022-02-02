@@ -82,7 +82,7 @@ def send_email(
 def generate_weekly_accounts_report(
     es_client,
     starting_week_date,
-    xlsx_directory=Path("./weekly_accounts_report"),
+    xlsx_directory=Path("./weekly_accounts_reports"),
     index="cas-credit-accounts",
 ):
     """Return HTML and XSLX report of per-account credits used and remaining"""
@@ -170,7 +170,7 @@ def generate_weekly_account_owner_report(
     es_client,
     account,
     starting_week_date,
-    xlsx_directory=Path("./weekly_accounts_report_by_account"),
+    xlsx_directory=Path("./weekly_account_reports_by_account"),
     snapshot_directory=Path("./weekly_accounts_snapshots"),
     index="cas-credit-accounts",
 ):
@@ -282,7 +282,7 @@ def generate_weekly_account_owner_report(
                 if i_col > merge_to_col:
                     html += """<td style="border-style: none"></td>"""
             elif i_col == 0:
-                val = "Change since last week"
+                val = "Change since last report"
                 html += f"""<td style="align: left; border-style: none" colspan="{merge_to_col}">{val}</td>"""
                 worksheet.write(i_row, i_col, val)
                 worksheet.merge_range(i_row, i_col, i_row, merge_to_col)
@@ -301,3 +301,5 @@ def generate_weekly_account_owner_report(
 
 
 # Add monthly NSF report
+def generate_monthly_agency_report():
+    pass

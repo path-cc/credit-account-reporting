@@ -176,3 +176,21 @@ def get_user_data(es_client, user=None, index="cas-users"):
         rows.append(row)
 
     return rows
+
+
+def get_account_emails(es_client, active_since=None, index="cas-credit-accounts"):
+    """Returns account ids (active since a given date)"""
+
+    query = {"index": index, "size": 1000, "body": {}}
+    if active_since is not None:
+        query["body"]["query"] = {
+            "range": {"last_charge_date": {"gte": str(active_since)}}
+        }
+
+    active_accounts = {}
+    for result in es_client.search(**query)["hits"]["hits"]:
+        active_accounts[result["_source"]["account_id"]] = result["_source"][
+            "owner_email"
+        ]
+
+    return active_accounts
