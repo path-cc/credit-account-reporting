@@ -73,6 +73,7 @@ def compute_daily_charges(
     usage_index="osg-schedd-*",
     charge_index="cas-daily-charge-records",
     resource_name_attr="MachineAttrGLIDEIN_ResourceName0",
+    account_name_attr="ProjectName",
     dry_run=False,
 ):
     """Computes charges given a time range"""
@@ -89,7 +90,7 @@ def compute_daily_charges(
         cost_function = getattr(cost_functions, account_row["type"])
         charge = 0.0
 
-        match_terms = {"CreditAccount": account_row["account_id"]}
+        match_terms = {account_name_attr: account_row["account_id"]}
         for usage_row in get_usage_data(
             es_client,
             date,

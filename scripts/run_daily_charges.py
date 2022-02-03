@@ -73,6 +73,11 @@ cannot continue until {missing_snapshot[-1]} exists."""
     envvar="CAS_RESOURCE_NAME_ATTR",
     default="MachineAttrGLIDEIN_ResourceName0",
 )
+@click.option(
+    "--account_name_attr",
+    envvar="CAS_ACCOUNT_NAME_ATTR",
+    default="ProjectName",
+)
 @click.option("--es_host", envvar="ES_HOST", default="localhost")
 @click.option("--es_user", envvar="ES_USER")
 @click.option("--es_pass", envvar="ES_PASS")
@@ -84,16 +89,29 @@ cannot continue until {missing_snapshot[-1]} exists."""
 )
 @click.option("--es_ca_certs", envvar="ES_CA_CERTS", type=click.Path(exists=True))
 def main(
-    snapshot_dir, account_index, es_host, es_user, es_pass, es_use_https, es_ca_certs
+    dry_run,
+    snapshot_dir,
+    account_index,
+    usage_index,
+    charge_index,
+    resource_name_attr,
+    account_name_attr,
+    es_host,
+    es_user,
+    es_pass,
+    es_use_https,
+    es_ca_certs,
 ):
     es_client = connect(es_host, es_user, es_pass, es_use_https, es_ca_certs)
-    for missing_snapshot_date in get_missing_snapshot_dates:
+    for missing_snapshot_date in get_missing_snapshot_dates(snapshot_dir):
         compute_daily_charges(
             es_client,
             missing_snapshot_date,
             account_index,
             usage_index,
             charge_index,
+            resource_name_attr,
+            account_name_attr,
             dry_run,
         )
         apply_daily_charges(
