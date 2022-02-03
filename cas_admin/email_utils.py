@@ -301,5 +301,35 @@ def generate_weekly_account_owner_report(
 
 
 # Add monthly NSF report
-def generate_monthly_agency_report():
-    pass
+def generate_monthly_agency_report(
+    es_client,
+    account,
+    starting_month_date,
+    xlsx_directory=Path("./monthly_agency_reports"),
+    index="cas-credit-accounts",
+):
+
+    date_str = str(starting_week_date)
+
+    xlsx_directory = xlsx_directory / account
+    xlsx_directory.mkdir(parents=True, exist_ok=True)
+    xlsx_file = xlsx_directory / f"path-cas-monthly-agency-report_{date_str}.xlsx"
+
+    html = """<html>
+<head>
+</head>
+<body style="background-color: white">
+<table style="border-collapse: collapse">
+"""
+
+    workbook = xlsxwriter.Workbook(str(xlsx_file))
+
+    # Create table
+
+    html += """</table>
+</body>
+</html>
+"""
+    workbook.close()
+
+    return {"html": html, "xlsx_file": xlsx_file}
