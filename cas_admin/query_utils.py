@@ -26,7 +26,7 @@ def query_charges(
         yield doc
 
 
-def query_usage(es_client, start_date, end_date, match_terms={}, index="osg-schedd-*"):
+def query_usage(es_client, start_date, end_date, match_terms={}, index="path-schedd-*"):
     """Returns iterator of usage given an account and a time range"""
 
     # Convert date objects to timestamps
@@ -78,7 +78,7 @@ def get_charge_data(
 
 
 def get_usage_data(
-    es_client, start_date, end_date, match_terms={}, addl_cols=[], index="osg-schedd-*"
+    es_client, start_date, end_date, match_terms={}, addl_cols=[], index="path-schedd-*"
 ):
     """Returns rows of usage data"""
 

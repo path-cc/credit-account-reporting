@@ -7,7 +7,7 @@ from cas_admin.connect import connect
 from cas_admin.usage import compute_daily_charges, apply_daily_charges
 from cas_admin.query_utils import query_account
 
-START = date(2022, 1, 25)
+START = date(2022, 2, 20)
 YESTERDAY = date.today() - timedelta(days=1)
 
 
@@ -64,7 +64,7 @@ cannot continue until {missing_snapshot[-1]} exists."""
 @click.option(
     "--account_index", envvar="CAS_ACCOUNT_INDEX", default="cas-credit-accounts"
 )
-@click.option("--usage_index", envvar="CAS_USAGE_INDEX", default="osg-schedd-*")
+@click.option("--usage_index", envvar="CAS_USAGE_INDEX", default="path-schedd-*")
 @click.option(
     "--charge_index", envvar="CAS_CHARGE_INDEX", default="cas-daily-charge-records"
 )
