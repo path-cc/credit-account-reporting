@@ -158,7 +158,7 @@ def get_users(es_client, name, es_index):
 @click.option("--account", type=str, default=None)
 @click.option("--es_index", default="cas-daily-charge-records-*")
 @click.pass_obj
-def get_charges(es_client, start_date, end_date, account, es_index):
+def get_charges(es_client, date, account, es_index):
     """Displays all charges accrued by account(s) on a given date.
     Defaults to displaying yesterday's charges if --date is not set."""
     start_date = date.date()

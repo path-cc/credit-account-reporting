@@ -45,8 +45,8 @@ def display_charges(
             col_size[col] = max(col_size[col], len(f"{row[col]:{col_format[col]}}"))
 
     # Print cols
+    items = []
     for col, col_name in columns.items():
-        items = []
         val = col_name
         if col in {"total_charges"}:
             val = f"{val}".rjust(col_size[col])
@@ -57,7 +57,7 @@ def display_charges(
     for row in charge_data:
         items = []
         for col in columns:
-            val = charge_data[col]
+            val = row[col]
             if col in {"total_charges"}:
                 val = f"{val:{col_format[col]}}".rjust(col_size[col])
             else:
@@ -70,7 +70,7 @@ def compute_daily_charges(
     es_client,
     date,
     account_index="cas-credit-accounts",
-    usage_index="osg-schedd-*",
+    usage_index="path-schedd-*",
     charge_index="cas-daily-charge-records",
     resource_name_attr="MachineAttrGLIDEIN_ResourceName0",
     account_name_attr="ProjectName",
@@ -82,7 +82,7 @@ def compute_daily_charges(
 
     if len(account_rows) == 0:
         click.echo(
-            f"ERROR: No account '{account}' found in index '{account_index}'", err=True
+            f"ERROR: No accounts found in index '{account_index}'", err=True
         )
         sys.exit(1)
 
@@ -108,6 +108,7 @@ def compute_daily_charges(
             charge += this_charge
 
         # Skip if no charges this day
+        print(f"Got {charge} for {account_row['account_id']} on {date}")
         if charge < 1e-8:
             continue
 
@@ -115,8 +116,8 @@ def compute_daily_charges(
         charge_doc = {
             "account_id": account_row["account_id"],
             "date": str(date),
-            "resource_name": usage_row[resource_name_attr],
-            "total_charges": cost,
+            "resource_name": usage_row[resource_name_attr] or "UNKNOWN",
+            "total_charges": charge,
         }
         doc_id = f"{account_row['account_id']}#{date}"
 
@@ -151,7 +152,7 @@ def apply_daily_charges(
                 err=True,
             )
             continue
-        elif len(account_info) > 1:
+        elif len(old_account_info) > 1:
             click.echo(
                 f"WARNING: Found multiple accounts named '{account}' in index '{account_index}', skipping applying charges",
                 err=True,

@@ -14,8 +14,8 @@ YESTERDAY = date.today() - timedelta(days=1)
 def snapshot_accounts(es_client, index, snapshot_dir, this_date, dry_run=False):
     """Create a backup of account data from previous day.
     Do not allow backups to be overwritten."""
-    account_data = query_account(es_client, index)
-    if len(account_data["hits"]["hits"] == 0):
+    account_data = query_account(es_client, index=index)
+    if len(account_data["hits"]["hits"]) == 0:
         click.echo(f"ERROR: No account data found in index '{index}'")
         sys.exit(1)
     snapshot_file = snapshot_dir / f"cas-credit-accounts_{this_date}.json"
@@ -36,7 +36,7 @@ def get_missing_snapshot_dates(snapshot_dir):
     can make sure a snapshot is made (in order) since START"""
     missing_snapshots = []
     n_days = (YESTERDAY - START).days
-    for n_day in range(n_days):
+    for n_day in range(n_days+1):
         this_date = START + timedelta(days=n_day)
         snapshot_file = snapshot_dir / f"cas-credit-accounts_{this_date}.json"
         if not snapshot_file.exists():
@@ -55,6 +55,7 @@ cannot continue until {missing_snapshot[-1]} exists."""
 
 @click.command()
 @click.option("--dry_run", default=False, is_flag=True)
+@click.option("--override_end_date", default=False, is_flag=True)
 @click.option(
     "--snapshot_dir",
     envvar="CAS_SNAPSHOT_DIR",
@@ -90,6 +91,7 @@ cannot continue until {missing_snapshot[-1]} exists."""
 @click.option("--es_ca_certs", envvar="ES_CA_CERTS", type=click.Path(exists=True))
 def main(
     dry_run,
+    override_end_date,
     snapshot_dir,
     account_index,
     usage_index,
@@ -102,7 +104,15 @@ def main(
     es_use_https,
     es_ca_certs,
 ):
+
+    if override_end_date:
+        global YESTERDAY
+        YESTERDAY = date.today()
+
+    snapshot_dir.mkdir(parents=True, exist_ok=True)
+
     es_client = connect(es_host, es_user, es_pass, es_use_https, es_ca_certs)
+
     for missing_snapshot_date in get_missing_snapshot_dates(snapshot_dir):
         compute_daily_charges(
             es_client,
@@ -122,7 +132,7 @@ def main(
             dry_run,
         )
         snapshot_accounts(
-            es_client, index, snapshot_dir, missing_snapshot_date, dry_run
+            es_client, account_index, snapshot_dir, missing_snapshot_date, dry_run
         )
 
 

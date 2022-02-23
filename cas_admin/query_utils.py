@@ -65,7 +65,7 @@ def get_charge_data(
     for charge_info in query_charges(
         es_client, start_date, end_date, account=account, index=index
     ):
-        row = account_info["_source"]
+        row = charge_info["_source"]
 
         for col in addl_cols:
             # Do some column common calculations if add_cols is set
@@ -100,10 +100,10 @@ def get_usage_data(
     cols = default_cols + addl_cols
 
     rows = []
-    for charge_info in query_usage(
-        es_client, start_date, end_date, user=user, index=index
+    for usage_info in query_usage(
+        es_client, start_date, end_date, index=index
     ):
-        row_in = account_info["_source"]
+        row_in = usage_info["_source"]
         row_out = {}
 
         for col in cols:
@@ -146,7 +146,10 @@ def get_account_data(
             if col == "remaining_credits":
                 row[col] = row["total_credits"] - row["total_charges"]
             elif col == "percent_credits_used":
-                row[col] = row["total_charges"] / row["total_credits"]
+                if row["total_credits"] > 1e-8:
+                    row[col] = row["total_charges"] / row["total_credits"]
+                else:
+                    row[col] = 0.
             else:
                 raise ValueError(f"Unknown additional column '{column}'")
 
