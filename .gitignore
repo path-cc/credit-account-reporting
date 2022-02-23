@@ -1,0 +1,11 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Default archive directories
+cas-credit-accounts-snapshots/
+monthly_agency_reports/
+weekly_accounts_reports/
+weekly_account_reports_by_account/
+weekly_accounts_snapshots/
