@@ -14,36 +14,80 @@ for calculating charges
 and sending email reports to
 account owners and PATh admins.
 
-## Usage
+## cas_admin usage
 
+The cas_admin tool provides the
+administrative interface for adding, modifying, and viewing credit accounts
+and account users. Available commands are:
+
+* `cas_admin get accounts` - View credit account(s)
+* `cas_admin create account` - Create a credit account
+* `cas_admin edit account` - Modify a credit account's owner or email
+* `cas_admin add credits` - Add credits to a credit account
+* `cas_admin get charges` - View credit charges for a given date
+* `cas_admin get users` - View user(s)
+* `cas_admin create user` - Create a user
+* `cas_admin edit user` - Change which credit accounts a user can use
+
+To get help on any of these commands, use --help after the command, for example:
 ```bash
-# Print the help message
-$ cas_admin --help
-
-# List accounts
-$ cas_admin get accounts
-
-# Create a new account "AliceGroup" for account owner "Alice Smith"
-$ cas_admin create account AliceGroup --owner "Alice Smith" --email alice.smith@wisc.edu --type cpu_2022 --credits 50
-
-# List detailed information for account "AliceGroup"
-$ cas_admin get accounts --name AliceGroup
-
-# Add 25 credits to account "AliceGroup"
-$ cas_admin add credits AliceGroup 25
-
-# Remove 10 credits from account "AliceGroup"
-$ cas_admin add credits AliceGroup -- -10
-
-# Create a user "bob", who submits from "path-submit.chtc.wisc.edu", that can use "AliceGroup" credits
-$ cas_admin create user bob@path-submit.chtc.wisc.edu --accounts AliceGroup
-
-# List all charges from yesterday
-$ cas_admin get charges
-
-# List all charges from Feb 26, 2022
-$ cas_admin get charges --date 2022-02-26
+$ cas_admin create account --help
 ```
+
+### cas_admin command examples
+
+List accounts
+```bash
+$ cas_admin get accounts
+Name         Type     Owner        Credits Charges PctUsed Remain
+GregsCookies cpu_2022 Jason Patton    40.0     0.6    1.5%   39.4
+```
+
+Create a new account "AliceGroup" for account owner "Alice Smith"
+```bash
+$ cas_admin create account AliceGroup --owner "Alice Smith" --email alice.smith@uni.edu --type cpu_2022 --credits 50
+account AliceGroup added.
+```
+
+List detailed information for account "AliceGroup"
+```bash
+$ cas_admin get accounts --name AliceGroup
+Account Name:	AliceGroup
+Account Type:	cpu_2022
+Owner:	Alice Smith
+Owner Email:	alice.smith@uni.edu
+Total Credits:	50.00
+Total Charges:	0.00
+Pct Credits Used:	0.00%
+Credits Remaining:	50.00
+```
+
+Add 25 credits to account "AliceGroup"
+```bash
+$ cas_admin add credits AliceGroup 25
+Account AliceGroup updated.
+```
+
+Remove 10 credits from account "AliceGroup"
+```bash
+$ cas_admin add credits AliceGroup -- -10
+Account AliceGroup updated.
+```
+
+Create a user "bob", who submits from "path-submit.uni.edu", that can use "AliceGroup" credits
+```bash
+$ cas_admin create user bob@path-submit.uni.edu --accounts AliceGroup
+User bob@path-submit.uni.edu added.
+```
+
+List all charges from Feb 23, 2022
+```bash
+$ cas_admin get charges --date 2022-02-23
+Date       Account      Charge Resource
+2022-02-23 GregsCookies    0.6 UNKNOWN
+```
+
+### cas_admin full command documentation
 
 Here is a lightly edited list of `--help` output for each `cas_admin` command:
 
