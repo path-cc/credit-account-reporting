@@ -106,7 +106,6 @@ def compute_daily_charges(
             charge += this_charge
 
         # Skip if no charges this day
-        print(f"Got {charge} for {account_row['account_id']} on {date}")
         if charge < 1e-8:
             continue
 
