@@ -25,7 +25,7 @@ def send_email(
     html="",
 ):
     if len(to_addrs) == 0:
-        logging.error("No recipients in the To: field, not sending email")
+        click.echo("No recipients in the To: field, not sending email", err=True)
         return
 
     msg = MIMEMultipart()

@@ -1,5 +1,6 @@
 import click
 from datetime import date
+from pathlib import Path
 from cas_admin.connect import connect
 from cas_admin.email_utils import send_email, generate_monthly_agency_report
 
@@ -17,11 +18,11 @@ def get_last_month(this_month=date.today().month):
     type=click.Path(file_okay=False, path_type=Path),
 )
 @click.option("--from", "from_addr", required=True)
-@click.option("--to", "to_addrs", multiple=True)
+@click.option("--to", "to_addrs", multiple=True, default=[])
 @click.option("--replyto", "replyto_addr", type=str, default=None)
-@click.option("--cc", "cc_addrs", multiple=True)
-@click.option("--bcc", "bcc_addrs", multiple=True)
-@click.option("--admin", "admin_addrs", multiple=True)
+@click.option("--cc", "cc_addrs", multiple=True, default=[])
+@click.option("--bcc", "bcc_addrs", multiple=True, default=[])
+@click.option("--admin", "admin_addrs", multiple=True, default=[])
 @click.option("--account_index", default="cas-credit-accounts")
 @click.option("--es_host", envvar="ES_HOST", default="localhost")
 @click.option("--es_user", envvar="ES_USER")
@@ -79,3 +80,7 @@ def main(
     if len(errors) > 0:
         error_html = f"<html><body>{'<br><br>'.join(errors)}</body></html>"
         send_email(from_addr, admin_addrs, f"Error sending {subject}", html=error_html)
+
+
+if __name__ == "__main__":
+    main()
