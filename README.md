@@ -16,7 +16,7 @@ account owners and PATh admins.
 
 ## cas_admin usage
 
-The cas_admin tool provides the
+The `cas_admin` tool provides the
 administrative interface for adding, modifying, and viewing credit accounts
 and account users. Available commands are:
 
