@@ -81,9 +81,7 @@ def compute_daily_charges(
     account_rows = get_account_data(es_client, index=account_index)
 
     if len(account_rows) == 0:
-        click.echo(
-            f"ERROR: No accounts found in index '{account_index}'", err=True
-        )
+        click.echo(f"ERROR: No accounts found in index '{account_index}'", err=True)
         sys.exit(1)
 
     for account_row in account_rows:

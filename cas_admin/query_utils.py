@@ -100,9 +100,7 @@ def get_usage_data(
     cols = default_cols + addl_cols
 
     rows = []
-    for usage_info in query_usage(
-        es_client, start_date, end_date, index=index
-    ):
+    for usage_info in query_usage(es_client, start_date, end_date, index=index):
         row_in = usage_info["_source"]
         row_out = {}
 
@@ -149,7 +147,7 @@ def get_account_data(
                 if row["total_credits"] > 1e-8:
                     row[col] = row["total_charges"] / row["total_credits"]
                 else:
-                    row[col] = 0.
+                    row[col] = 0.0
             else:
                 raise ValueError(f"Unknown additional column '{column}'")
 
