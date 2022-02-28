@@ -100,7 +100,7 @@ def get_usage_data(
     cols = default_cols + addl_cols
 
     rows = []
-    for usage_info in query_usage(es_client, start_date, end_date, index=index):
+    for usage_info in query_usage(es_client, start_date, end_date, match_terms=match_terms, index=index):
         row_in = usage_info["_source"]
         row_out = {}
 
