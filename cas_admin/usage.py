@@ -78,6 +78,7 @@ def compute_daily_charges(
 ):
     """Computes charges given a time range"""
 
+    today_charge_data = {}
     account_rows = get_account_data(es_client, index=account_index)
 
     if len(account_rows) == 0:
@@ -124,6 +125,9 @@ def compute_daily_charges(
         else:
             click.echo(f"Dry run, not indexing doc with id '{doc_id}'")
 
+        today_charge_data[account_row["account_id"]] = charge_doc
+    return today_charge_data
+
 
 def apply_daily_charges(
     es_client,
@@ -131,15 +135,22 @@ def apply_daily_charges(
     account_index="cas-credit-accounts",
     charge_index="cas-daily-charge-records",
     old_account_docs = {},
+    today_charge_data = {},
     dry_run=False,
 ):
     """Applies daily charges to credit accounts."""
 
     updated_account_docs = {}
 
-    for charge_info in get_charge_data(
-        es_client, date, date + timedelta(days=1), account=None, index=charge_index
-    ):
+    # Use existing charge data in memory if possible
+    if len(today_charge_data) == 0:
+        charge_data = get_charge_data(
+            es_client, date, date + timedelta(days=1), account=None, index=charge_index
+        )
+    else:
+        charge_data = list(today_charge_data.values())
+
+    for charge_info in charge_data:
 
         # Use existing account data in memory if possible
         if charge_info["account_id"] in old_account_docs:
@@ -180,7 +191,7 @@ def apply_daily_charges(
     # not do transactions.
     if not dry_run:
         success_count, error_infos = bulk(
-            es_client, list(updated_account_docs.values()), raise_on_error=False
+            es_client, list(updated_account_docs.values()), raise_on_error=False, refresh="wait_for"
         )
         if len(error_infos) > 0:
             click.echo(
