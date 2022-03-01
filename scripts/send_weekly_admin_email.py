@@ -57,11 +57,11 @@ def main(
         html = attachments.pop("html")
         send_email(
             from_addr,
-            to_addrs,
+            list(to_addrs),
             subject,
             replyto_addr,
-            cc_addrs,
-            bcc_addrs,
+            list(cc_addrs),
+            list(bcc_addrs),
             list(attachments.values()),
             html,
         )
@@ -73,7 +73,7 @@ def main(
     # Send email with errors to admins
     if len(errors) > 0:
         error_html = f"<html><body>{'<br><br>'.join(errors)}</body></html>"
-        send_email(from_addr, admin_addrs, f"Error sending {subject}", html=error_html)
+        send_email(from_addr, list(admin_addrs), f"Error sending {subject}", html=error_html)
 
 
 if __name__ == "__main__":

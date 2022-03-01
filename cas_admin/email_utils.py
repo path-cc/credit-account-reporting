@@ -108,6 +108,7 @@ def generate_weekly_accounts_report(
 <table style="border-collapse: collapse">
 """
     workbook = xlsxwriter.Workbook(str(xlsx_file))
+    worksheet = workbook.add_worksheet()
 
     xlsx_header_fmt = workbook.add_format({"text_wrap": True, "align": "center"})
     xlsx_date_fmt = workbook.add_format({"num_format": "yyyy-mm-dd"})
@@ -116,24 +117,24 @@ def generate_weekly_accounts_report(
 
     def row_style(i):
         if i % 2 == 1:
-            return "background-color: #ccc"
+            return "background-color: #ddd"
         return "background-color: white"
 
     def col_html(x):
         try:
             x = float(x)
             return (
-                f"""<td style="align: right; border: 1px solid black">{x:,.1f}</td>"""
+                f"""<td style="text-align: right; border: 1px solid black">{x:,.1f}</td>"""
             )
         except ValueError:
-            return f"""<td style="align: left; border: 1px solid black">{x}</td>"""
+            return f"""<td style="text-align: left; border: 1px solid black">{x}</td>"""
 
     # Write header
     i_row = 0
     html += f"""<tr style="{row_style(0)}">\n"""
     for i_col, (column_id, column_name) in enumerate(columns.items()):
         html += (
-            f"""<th style="align: center; border: 1px solid black">{column_name}</th>"""
+            f"""<th style="text-align: center; border: 1px solid black">{column_name}</th>"""
         )
         worksheet.write(i_row, i_col, column_name, xlsx_header_fmt)
     html += "</tr>\n"
@@ -148,7 +149,7 @@ def generate_weekly_accounts_report(
         for i_col, col in enumerate(columns):
             val = row[col]
             if col == "percent_credits_used":
-                html += f"""<td style="align: right; border: 1px solid black">{val:.1%}</td>"""
+                html += f"""<td style="text-align: right; border: 1px solid black">{val:.1%}</td>"""
                 worksheet.write(i_row, i_col, val, xlsx_percent_fmt)
             else:
                 html += col_html(val)
@@ -199,6 +200,7 @@ def generate_weekly_account_owner_report(
 <table style="border-collapse: collapse">
 """
     workbook = xlsxwriter.Workbook(str(xlsx_file))
+    worksheet = workbook.add_worksheet()
 
     xlsx_header_fmt = workbook.add_format({"text_wrap": True, "align": "center"})
     xlsx_date_fmt = workbook.add_format({"num_format": "yyyy-mm-dd"})
@@ -210,17 +212,17 @@ def generate_weekly_account_owner_report(
         try:
             x = float(x)
             return (
-                f"""<td style="align: right; border: 1px solid black">{x:,.1f}</td>"""
+                f"""<td style="text-align: right; border: 1px solid black">{x:,.1f}</td>"""
             )
         except ValueError:
-            return f"""<td style="align: left; border: 1px solid black">x</td>"""
+            return f"""<td style="text-align: left; border: 1px solid black">{x}</td>"""
 
     # Write header
     i_row = 0
     html += f"""<tr>\n"""
     for i_col, (column_id, column_name) in enumerate(columns.items()):
         html += (
-            f"""<th style="align: center; border: 1px solid black">{column_name}</th>"""
+            f"""<th style="text-align: center; border: 1px solid black">{column_name}</th>"""
         )
         worksheet.write(i_row, i_col, column_name, xlsx_header_fmt)
     html += "</tr>\n"
@@ -252,11 +254,11 @@ def generate_weekly_account_owner_report(
         val = row[col]
         if col == "percent_credits_used":
             html += (
-                f"""<td style="align: right; border: 1px solid black">{val:.1%}</td>"""
+                f"""<td style="text-align: right; border: 1px solid black">{val:.1%}</td>"""
             )
             worksheet.write(i_row, i_col, val, xlsx_percent_fmt)
         else:
-            html += col_html(val)
+            html += col_style(val)
             try:
                 worksheet.write(i_row, i_col, float(val), xlsx_numeric_fmt)
             except ValueError:
@@ -283,12 +285,12 @@ def generate_weekly_account_owner_report(
                     html += """<td style="border-style: none"></td>"""
             elif i_col == 0:
                 val = "Change since last report"
-                html += f"""<td style="align: left; border-style: none" colspan="{merge_to_col}">{val}</td>"""
+                html += f"""<td style="text-align: left; border-style: none" colspan="{merge_to_col}">{val}</td>"""
                 worksheet.write(i_row, i_col, val)
                 worksheet.merge_range(i_row, i_col, i_row, merge_to_col)
             else:
                 val = row[col] - last_row[col]
-                html += f"""<td style="align: right; border: 1px solid black">{val:+,.1f}</td>"""
+                html += f"""<td style="text-align: right; border: 1px solid black">{val:+,.1f}</td>"""
                 worksheet.write(i_row, i_col, val, xlsx_delta_fmt)
         html += "</tr>\n"
     html += """</table>
@@ -323,6 +325,7 @@ def generate_monthly_agency_report(
 """
 
     workbook = xlsxwriter.Workbook(str(xlsx_file))
+    worksheet = workbook.add_worksheet()
 
     # Create table
 
