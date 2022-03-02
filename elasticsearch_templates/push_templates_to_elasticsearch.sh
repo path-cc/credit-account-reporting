@@ -17,7 +17,7 @@ for index_template in cas_daily_charge_records; do
 done
 
 # Push indices
-for index in cas-users cas-credit-accounts cas-daily-charge-records-000001; do
+for index in cas-credit-accounts cas-daily-charge-records-000001; do
     curl -XPUT "${ES_HOST}/${index}" -H "Content-Type: application/json" -d @indices/${index}.json
     echo
 done
