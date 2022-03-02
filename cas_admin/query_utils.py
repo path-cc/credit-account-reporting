@@ -158,29 +158,6 @@ def get_account_data(
     return rows
 
 
-def query_user(es_client, user=None, index="cas-users"):
-    """Returns user(s) info"""
-
-    query = {"index": index, "size": 1000, "body": {}}
-
-    if user is not None:
-        query["body"]["query"] = {"term": {"user_id": user}}
-
-    result = es_client.search(**query)
-    return result
-
-
-def get_user_data(es_client, user=None, index="cas-users"):
-    """Returns rows of user data"""
-
-    rows = []
-    for user_info in query_user(es_client, user=user, index=index)["hits"]["hits"]:
-        row = user_info["_source"]
-        rows.append(row)
-
-    return rows
-
-
 def get_account_emails(es_client, active_since=None, index="cas-credit-accounts"):
     """Returns account ids (active since a given date)"""
 

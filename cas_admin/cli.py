@@ -9,12 +9,6 @@ from cas_admin.account import (
     display_account,
     display_all_accounts,
 )
-from cas_admin.user import (
-    add_user,
-    edit_permitted_credit_accounts,
-    display_user,
-    display_all_users,
-)
 from cas_admin.usage import display_charges
 import cas_admin.cost_functions as cost_functions
 
@@ -66,22 +60,15 @@ def cli(ctx, es_host, es_user, es_pass, es_use_https, es_ca_certs):
     """Administration tool for the PATh Credit Accounting Service
 
     The PATh Credit Accounting Service keeps track of computing usage for users with an allocation on PATh hardware.
-    The cas_admin tool provides the administrative interface for adding, modifying, and viewing credit accounts
-    and account users. Available commands are:
+    The cas_admin tool provides the administrative interface for adding, modifying, and viewing credit accounts.
+    Available commands are:
 
     \b
-    Credit account administration commands:
     cas_admin get accounts - View credit account(s)
     cas_admin create account - Create a credit account
     cas_admin edit account - Modify a credit account's owner or email
     cas_admin add credits - Add credits to a credit account
     cas_admin get charges - View credit charges for a given date
-
-    \b
-    User administration commands:
-    cas_admin get users - View user(s)
-    cas_admin create user - Create a user
-    cas_admin edit user - Change which credit accounts a user can use
 
     To get help on any of these commands, use --help after the command, for example:
 
@@ -91,7 +78,7 @@ def cli(ctx, es_host, es_user, es_pass, es_use_https, es_ca_certs):
     ctx.obj = connect(es_host, es_user, es_pass, es_use_https, es_ca_certs)
 
 
-@cli.group(no_args_is_help=True, short_help="[account|user]", options_metavar=None)
+@cli.group(no_args_is_help=True, short_help="[account]", options_metavar=None)
 @click.pass_context
 def create(ctx):
     pass
@@ -118,28 +105,7 @@ def create_account(es_client, name, owner, email, acct_type, credts, es_index):
     add_account(es_client, name, owner, email, acct_type, credts, es_index)
 
 
-@create.command("user", no_args_is_help=True, short_help="Create a user")
-@click.argument("name", metavar="USER_NAME")
-@click.option(
-    "--accounts",
-    metavar="ACCOUNT_NAMES",
-    required=True,
-    help="Comma-delimited list of credit accounts",
-)
-@click.option("--es_index", default="cas-users", hidden=True)
-@click.pass_obj
-def create_user(es_client, name, accounts, es_index):
-    """Create a user account named USER_NAME.
-
-    The user name is case-sensitive and in the format "<username>@<access-point-hostname>".
-    Accounts are comma-delimited and should be provided without spaces. For example:
-
-    \b
-    cas_admin create user alice.smith@path-submit.chtc.wisc.edu --accounts AliceGroup,OtherGroup"""
-    add_user(es_client, name, accounts, es_index)
-
-
-@cli.group(no_args_is_help=True, short_help="[account|user]", options_metavar=None)
+@cli.group(no_args_is_help=True, short_help="[account]", options_metavar=None)
 @click.pass_context
 def edit(ctx):
     pass
@@ -158,30 +124,6 @@ def edit(ctx):
 def edit_account(es_client, name, owner, email, es_index):
     """Modify the owner and/or email of credit account named ACCOUNT_NAME."""
     edit_owner(es_client, name, owner, email, es_index)
-
-
-@edit.command(
-    "user",
-    no_args_is_help=True,
-    short_help="Change which credit accounts a user can use",
-)
-@click.argument("name", metavar="USER_NAME")
-@click.option(
-    "--accounts",
-    metavar="ACCOUNT_NAMES",
-    required=True,
-    help="Comma-delimited list of accounts the user may charge.",
-)
-@click.option("--es_index", default="cas-users", hidden=True)
-@click.pass_obj
-def edit_user(es_client, name, accounts, es_index):
-    """Modify the list of credit accounts that USER_NAME can use.
-
-    Accounts are comma-delimited and should be provided without spaces. For example:
-
-    \b
-    cas_admin edit user alice.smith@path-submit.chtc.wisc.edu --accounts AliceGroup,OtherGroup"""
-    edit_permitted_credit_accounts(es_client, name, accounts, es_index)
 
 
 @cli.group(no_args_is_help=True, short_help="[credits]", options_metavar=None)
@@ -215,9 +157,7 @@ def add_account_credits(es_client, name, credts, es_index):
     add_credits(es_client, name, credts, es_index)
 
 
-@cli.group(
-    no_args_is_help=True, short_help="[accounts|users|charges]", options_metavar=None
-)
+@cli.group(no_args_is_help=True, short_help="[accounts|charges]", options_metavar=None)
 @click.pass_context
 def get(ctx):
     pass
@@ -259,24 +199,6 @@ def get_accounts(es_client, name, sortby, reverse, es_index):
         display_account(es_client, name, es_index)
     else:
         display_all_accounts(es_client, sort_map[sortby], reverse, es_index)
-
-
-@get.command("users", short_help="View user(s)")
-@click.option(
-    "--name",
-    metavar="USER_NAME",
-    type=str,
-    default=None,
-    help="Get detailed output for user USER_NAME.",
-)
-@click.option("--es_index", default="cas-users", hidden=True)
-@click.pass_obj
-def get_users(es_client, name, es_index):
-    """Display users."""
-    if name is not None:
-        display_user(es_client, name, es_index)
-    else:
-        display_all_users(es_client, es_index)
 
 
 @get.command("charges", short_help="View credit charges from one day")

@@ -18,16 +18,13 @@ account owners and PATh admins.
 
 The `cas_admin` tool provides the
 administrative interface for adding, modifying, and viewing credit accounts
-and account users. Available commands are:
+Available commands are:
 
 * `cas_admin get accounts` - View credit account(s)
 * `cas_admin create account` - Create a credit account
 * `cas_admin edit account` - Modify a credit account's owner or email
 * `cas_admin add credits` - Add credits to a credit account
 * `cas_admin get charges` - View credit charges for a given date
-* `cas_admin get users` - View user(s)
-* `cas_admin create user` - Create a user
-* `cas_admin edit user` - Change which credit accounts a user can use
 
 To get help on any of these commands, use --help after the command, for example:
 ```bash
@@ -74,12 +71,6 @@ $ cas_admin add credits AliceGroup -- -10
 Account AliceGroup updated.
 ```
 
-Create a user "bob", who submits from "path-submit.uni.edu", that can use "AliceGroup" credits
-```bash
-$ cas_admin create user bob@path-submit.uni.edu --accounts AliceGroup
-User bob@path-submit.uni.edu added.
-```
-
 List all charges from Feb 23, 2022
 ```bash
 $ cas_admin get charges --date 2022-02-23
@@ -98,20 +89,14 @@ Usage: cas_admin COMMAND [ARGS]...
 
   The PATh Credit Accounting Service keeps track of computing usage for users
   with an allocation on PATh hardware. The cas_admin tool provides the
-  administrative interface for adding, modifying, and viewing credit accounts
-  and account users. Available commands are:
+  administrative interface for adding, modifying, and viewing credit accounts.
+  Available commands are:
 
-  Credit account administration commands:
   cas_admin get accounts - View credit account(s)
   cas_admin create account - Create a credit account
   cas_admin edit account - Modify a credit account's owner or email
   cas_admin add credits - Add credits to a credit account
   cas_admin get charges - View credit charges for a given date
-
-  User administration commands:
-  cas_admin get users - View user(s)
-  cas_admin create user - Create a user
-  cas_admin edit user - Change which credit accounts a user can use
 
   To get help on any of these commands, use --help after the command, for
   example:
@@ -189,46 +174,6 @@ Usage: cas_admin get charges [OPTIONS]
 Options:
   --date [%Y-%m-%d]    Display charges from given date, defaults to yesterday.
   --name ACCOUNT_NAME  Display charges only for credit account ACCOUNT_NAME
-
----
-
-Usage: cas_admin get users [OPTIONS]
-
-  Display users.
-
-Options:
-  --name USER_NAME  Get detailed output for user USER_NAME.
-
----
-
-Usage: cas_admin create user [OPTIONS] USER_NAME
-
-  Create a user account named USER_NAME.
-
-  The user name is case-sensitive and in the format "<username>@<access-point-
-  hostname>". Accounts are comma-delimited and should be provided without
-  spaces. For example:
-
-  cas_admin create user alice.smith@path-submit.chtc.wisc.edu --accounts AliceGroup,OtherGroup
-
-Options:
-  --accounts ACCOUNT_NAMES  Comma-delimited list of credit accounts
-                            [required]
-
----
-
-Usage: cas_admin edit user [OPTIONS] USER_NAME
-
-  Modify the list of credit accounts that USER_NAME can use.
-
-  Accounts are comma-delimited and should be provided without spaces. For
-  example:
-
-  cas_admin edit user alice.smith@path-submit.chtc.wisc.edu --accounts AliceGroup,OtherGroup
-
-Options:
-  --accounts ACCOUNT_NAMES  Comma-delimited list of accounts the user may
-                            charge.  [required]
 ```
 
 ## License
