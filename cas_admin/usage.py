@@ -134,8 +134,8 @@ def apply_daily_charges(
     date,
     account_index="cas-credit-accounts",
     charge_index="cas-daily-charge-records",
-    old_account_docs = {},
-    today_charge_data = {},
+    old_account_docs={},
+    today_charge_data={},
     dry_run=False,
 ):
     """Applies daily charges to credit accounts."""
@@ -191,7 +191,10 @@ def apply_daily_charges(
     # not do transactions.
     if not dry_run:
         success_count, error_infos = bulk(
-            es_client, list(updated_account_docs.values()), raise_on_error=False, refresh="wait_for"
+            es_client,
+            list(updated_account_docs.values()),
+            raise_on_error=False,
+            refresh="wait_for",
         )
         if len(error_infos) > 0:
             click.echo(
@@ -204,7 +207,7 @@ def apply_daily_charges(
         click.echo(
             f"Dry run, not indexing {len(updated_account_docs)} updated accounts."
         )
-    
+
     # Return the updated account docs so that they can be used from memory
     # if the function is called in rapid succession. This is important
     # because, again, Elasticsearch isn't transaction, you could get old data

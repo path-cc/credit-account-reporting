@@ -157,9 +157,7 @@ def add_account_credits(es_client, name, credts, es_index):
     add_credits(es_client, name, credts, es_index)
 
 
-@cli.group(
-    no_args_is_help=True, short_help="[accounts|charges]", options_metavar=None
-)
+@cli.group(no_args_is_help=True, short_help="[accounts|charges]", options_metavar=None)
 @click.pass_context
 def get(ctx):
     pass
