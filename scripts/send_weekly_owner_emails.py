@@ -26,6 +26,7 @@ IS_MONTHLY = date.today().day <= 7
 @click.option("--bcc", "bcc_addrs", multiple=True, default=[])
 @click.option("--admin", "admin_addrs", multiple=True, default=[])
 @click.option("--account_index", default="cas-credit-accounts")
+@click.option("--charge_index", default="cas-daily-charge-records-*")
 @click.option("--es_host", envvar="ES_HOST", default="localhost")
 @click.option("--es_user", envvar="ES_USER")
 @click.option("--es_pass", envvar="ES_PASS")
@@ -45,6 +46,7 @@ def main(
     xlsx_directory,
     snapshot_directory,
     account_index,
+    charge_index,
     from_addr,
     to_addrs,
     replyto_addr,
@@ -73,6 +75,7 @@ def main(
                 xlsx_directory,
                 snapshot_directory,
                 account_index,
+                charge_index,
             )
             html = attachments.pop("html")
             if IS_MONTHLY or account_id in active_accounts:
@@ -92,7 +95,9 @@ def main(
     # Send email with errors to admins
     if len(errors) > 0:
         error_html = f"<html><body>{'<br><br>'.join(errors)}</body></html>"
-        send_email(from_addr, list(admin_addrs), f"Error sending {subject}", html=error_html)
+        send_email(
+            from_addr, list(admin_addrs), f"Error sending {subject}", html=error_html
+        )
 
 
 if __name__ == "__main__":

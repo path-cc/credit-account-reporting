@@ -3,35 +3,92 @@ import sys
 from datetime import timedelta
 from collections import OrderedDict
 from operator import itemgetter
-from elasticsearch.helpers import scan, bulk
+from elasticsearch.helpers import bulk
 
 from cas_admin.query_utils import (
     get_account_data,
     get_charge_data,
     get_usage_data,
-    query_account,
 )
 import cas_admin.cost_functions as cost_functions
 
 
 def display_charges(
-    es_client, start_date, end_date, account=None, index="cas-daily-charge-records-*"
+    es_client,
+    start_date,
+    end_date,
+    account=None,
+    collapse_users=False,
+    collapse_resources=False,
+    index="cas-daily-charge-records-*",
 ):
     """Displays charges given a time range"""
 
     columns = OrderedDict()
     columns["date"] = "Date"
     columns["account_id"] = "Account"
+    if not collapse_users:
+        columns["user_id"] = "User"
+    if not collapse_resources:
+        columns["resource_name"] = "Resource"
     columns["total_charges"] = "Charge"
-    columns["resource_name"] = "Resource"
 
     charge_data = get_charge_data(
         es_client, start_date, end_date, account=account, index=index
     )
     if len(charge_data) == 0:
-        click.echo(f"ERROR: No charge records found in index '{index}'", err=True)
+        click.echo(f"No charge records found.", err=True)
         sys.exit(1)
-    charge_data.sort(key=itemgetter("date", "account_id"))
+    charge_data.sort(key=itemgetter("date", "account_id", "user_id", "resource_name"))
+
+    if collapse_resources:
+        new_charge_data = []
+        last_key = None
+        total_charges = 0.0
+        for charge_info in charge_data:
+            key = {
+                "date": charge_info["date"],
+                "account_id": charge_info["account_id"],
+                "user_id": charge_info["user_id"],
+            }
+            if not last_key:
+                last_key = key.copy()
+            if key != last_key:
+                last_key["resource_name"] = "total"
+                last_key["total_charges"] = total_charges
+                new_charge_data.append(last_key)
+                last_key = key
+                total_charges = 0.0
+            total_charges += charge_info["total_charges"]
+        last_key["resource_name"] = "total"
+        last_key["total_charges"] = total_charges
+        new_charge_data.append(last_key)
+        charge_data = new_charge_data
+
+    if collapse_users:
+        charge_data.sort(key=itemgetter("date", "account_id", "resource_name"))
+        new_charge_data = []
+        last_key = None
+        total_charges = 0.0
+        for charge_info in charge_data:
+            key = {
+                "date": charge_info["date"],
+                "account_id": charge_info["account_id"],
+                "resource_name": charge_info["resource_name"],
+            }
+            if not last_key:
+                last_key = key.copy()
+            if key != last_key:
+                last_key["user_id"] = "total"
+                last_key["total_charges"] = total_charges
+                new_charge_data.append(last_key)
+                last_key = key
+                total_charges = 0.0
+            total_charges += charge_info["total_charges"]
+        last_key["user_id"] = "total"
+        last_key["total_charges"] = total_charges
+        new_charge_data.append(last_key)
+        charge_data = new_charge_data
 
     # Set col formats
     col_format = {col: "" for col in columns}
@@ -72,24 +129,23 @@ def compute_daily_charges(
     account_index="cas-credit-accounts",
     usage_index="path-schedd-*",
     charge_index="cas-daily-charge-records",
-    resource_name_attr="MachineAttrGLIDEIN_ResourceName0",
     account_name_attr="ProjectName",
     dry_run=False,
 ):
     """Computes charges given a time range"""
 
-    today_charge_data = {}
-    account_rows = get_account_data(es_client, index=account_index)
+    account_data = get_account_data(es_client, index=account_index)
 
-    if len(account_rows) == 0:
+    if len(account_data) == 0:
         click.echo(f"ERROR: No accounts found in index '{account_index}'", err=True)
         sys.exit(1)
 
-    for account_row in account_rows:
-        cost_function = getattr(cost_functions, account_row["type"])
-        charge = 0.0
+    for account_info in account_data:
+        account = account_info["account_id"]
+        cost_function = getattr(cost_functions, account_info["type"])
+        account_charges = {}
 
-        match_terms = {account_name_attr: account_row["account_id"]}
+        match_terms = {account_name_attr: account}
         for usage_row in get_usage_data(
             es_client,
             date,
@@ -97,36 +153,54 @@ def compute_daily_charges(
             match_terms=match_terms,
             index=usage_index,
         ):
-            this_charge = cost_function(usage_row)
-            if this_charge < 0:
+
+            user = f"{usage_row.get('Owner', 'UNKNOWN')}@{usage_row.get('ScheddName', 'UNKNOWN')}"
+            user_charges = account_charges.get(user, {})
+
+            resource_charges = cost_function(usage_row)
+            for resource_name, resource_charge in resource_charges.items():
+                if resource_charge < 0:
+                    click.echo(
+                        f"WARNING: Negative cost computed for account {account} with usage from following job ad, ignoring:\n{usage_row}",
+                        err=True,
+                    )
+                user_charges[resource_name] = (
+                    user_charges.get(resource_name, 0.0) + resource_charge
+                )
+            account_charges[user] = user_charges
+
+        # Create charge docs
+        account_charge_docs = []
+        for user, user_charges in account_charges.items():
+            for resource_name, resource_charge in user_charges.items():
+                doc_source = {
+                    "account_id": account,
+                    "date": str(date),
+                    "user_id": user,
+                    "resource_name": resource_name,
+                    "total_charges": resource_charge,
+                }
+                doc_id = f"{account}#{date}#{user}#{resource_name}"
+                account_charge_docs.append(
+                    {"_index": charge_index, "_id": doc_id, "_source": doc_source}
+                )
+
+        # Upload charges
+        if not dry_run:
+            success_count, error_infos = bulk(
+                es_client, account_charge_docs, raise_on_error=False, refresh="wait_for"
+            )
+            if len(error_infos) > 0:
                 click.echo(
-                    f"WARNING: Negative cost computed for account {account} with usage from doc id {job['_id']}, ignoring",
+                    f"Failed to add {len(error_infos)} charges in index '{charge_index}' for account {account}:",
                     err=True,
                 )
-                continue
-            charge += this_charge
-
-        # Skip if no charges this day
-        if charge < 1e-8:
-            continue
-
-        # Create charge doc
-        charge_doc = {
-            "account_id": account_row["account_id"],
-            "date": str(date),
-            "resource_name": usage_row[resource_name_attr] or "UNKNOWN",
-            "total_charges": charge,
-        }
-        doc_id = f"{account_row['account_id']}#{date}"
-
-        # Upload charge
-        if not dry_run:
-            es_client.index(index=charge_index, id=doc_id, body=charge_doc)
+                for i, error_info in enumerate(error_infos, start=1):
+                    click.echo(f"\t{i}. {error_info}", err=True)
         else:
-            click.echo(f"Dry run, not indexing doc with id '{doc_id}'")
-
-        today_charge_data[account_row["account_id"]] = charge_doc
-    return today_charge_data
+            click.echo(
+                f"Dry run, not indexing {len(account_charge_docs)} new charges for account {account}."
+            )
 
 
 def apply_daily_charges(
@@ -134,64 +208,49 @@ def apply_daily_charges(
     date,
     account_index="cas-credit-accounts",
     charge_index="cas-daily-charge-records",
-    old_account_docs = {},
-    today_charge_data = {},
     dry_run=False,
 ):
     """Applies daily charges to credit accounts."""
 
     updated_account_docs = {}
 
-    # Use existing charge data in memory if possible
-    if len(today_charge_data) == 0:
-        charge_data = get_charge_data(
-            es_client, date, date + timedelta(days=1), account=None, index=charge_index
-        )
-    else:
-        charge_data = list(today_charge_data.values())
+    # Load current account data
+    account_infos = {}
+    for account_info in get_account_data(es_client, index=account_index):
+        account_infos[account_info["account_id"]] = account_info
 
+    charge_data = get_charge_data(
+        es_client, date, date + timedelta(days=1), index=charge_index
+    )
+
+    updated_accounts = {}
     for charge_info in charge_data:
 
-        # Use existing account data in memory if possible
-        if charge_info["account_id"] in old_account_docs:
-            old_account_doc = old_account_docs[charge_info["account_id"]]
+        account = charge_info["account_id"]
+        if account not in account_infos:
+            click.echo(
+                f"WARNING: No account '{account}' found in index '{account_index}', skipping applying charges",
+                err=True,
+            )
+            continue
 
-        # Otherwise query for account data
-        else:
-            old_account_info = query_account(
-                es_client, account=charge_info["account_id"], index=account_index
-            )["hits"]["hits"]
+        if account not in updated_accounts:
+            updated_accounts[account] = account_infos[account]
 
-            if len(old_account_info) == 0:
-                click.echo(
-                    f"WARNING: No account '{account}' found in index '{account_index}', skipping applying charges",
-                    err=True,
-                )
-                continue
-            elif len(old_account_info) > 1:
-                click.echo(
-                    f"WARNING: Found multiple accounts named '{account}' in index '{account_index}', skipping applying charges",
-                    err=True,
-                )
-            old_account_doc = old_account_info[0]
+        updated_accounts[account]["total_charges"] += charge_info["total_charges"]
+        updated_accounts[account]["last_charge_date"] = str(date)
 
-        updated_account_doc = {
-            "_index": account_index,
-            "_id": old_account_doc["_id"],
-            "_source": old_account_doc["_source"],
-        }
-
-        updated_account_doc["_source"]["total_charges"] += charge_info["total_charges"]
-        updated_account_doc["_source"]["last_charge_date"] = str(date)
-
-        updated_account_docs[charge_info["account_id"]] = updated_account_doc
+    updated_account_docs = []
+    for account, updated_account in updated_accounts.items():
+        doc_id = account
+        updated_account_docs.append(
+            {"_index": account_index, "_id": doc_id, "_source": updated_account}
+        )
 
     # Do a bulk upload.
-    # Note that this is *not* transactional. Elasticsearch by definition does
-    # not do transactions.
     if not dry_run:
         success_count, error_infos = bulk(
-            es_client, list(updated_account_docs.values()), raise_on_error=False, refresh="wait_for"
+            es_client, updated_account_docs, raise_on_error=False, refresh="wait_for"
         )
         if len(error_infos) > 0:
             click.echo(
@@ -204,9 +263,3 @@ def apply_daily_charges(
         click.echo(
             f"Dry run, not indexing {len(updated_account_docs)} updated accounts."
         )
-    
-    # Return the updated account docs so that they can be used from memory
-    # if the function is called in rapid succession. This is important
-    # because, again, Elasticsearch isn't transaction, you could get old data
-    # when querying docs shortly after an update.
-    return updated_account_docs
