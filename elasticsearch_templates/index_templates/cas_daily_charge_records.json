@@ -21,6 +21,7 @@
                     "format": "strict_date"
                 },
                 "resource_name": {"type": "keyword"},
+                "user_id": {"type": "keyword"},
                 "total_charges": {"type": "double"}
             }
         }
