@@ -293,16 +293,36 @@ def get_users(es_client, name, es_index):
     default=None,
     help="Display charges only for credit account ACCOUNT_NAME",
 )
+@click.option(
+    "--by-user",
+    "by_user",
+    is_flag=True,
+    help="Display charges totaled by users",
+)
+@click.option(
+    "--by-resource",
+    "by_resource",
+    is_flag=True,
+    help="Display charges totaled by resource",
+)
+@click.option(
+    "--totals",
+    is_flag=True,
+    help="Display account totals only (implies --by-user --by-resource)",
+)
 @click.option("--es_index", default="cas-daily-charge-records-*", hidden=True)
 @click.pass_obj
-def get_charges(es_client, date, name, es_index):
+def get_charges(es_client, date, name, by_user, by_resource, totals, es_index):
     """Displays charges accrued by account(s) from a single day.
 
     Defaults to displaying yesterday's charges from all credit accounts.
     A specified --date value must be in YYYY-MM-DD format."""
     start_date = date.date()
     end_date = start_date + timedelta(days=1)
-    display_charges(es_client, start_date, end_date, name, es_index)
+    if totals:
+        by_user = True
+        by_resource = True
+    display_charges(es_client, start_date, end_date, name, by_resource, by_user, es_index)
 
 
 if __name__ == "__main__":

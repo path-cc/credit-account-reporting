@@ -27,6 +27,12 @@ class _charge_table(_OrderedDict):
         raise ValueError(f"Value '{value}' does not exist in defined ranges")
 
 
+# Cost functions return the charge per resource in a dict.
+# For example, for a job that should be charged 0.5 credits for CPU usage
+# and 0.2 credits for memory usage, the function should return:
+# {"cpu": 0.5, "memory": 0.2}
+
+
 def cpu_2022(ad):
     cpu_charge_table = _charge_table(
         {
@@ -57,11 +63,9 @@ def cpu_2022(ad):
 
     above_nominal_memory_gb = max(memory_gb - (cpus * nominal_memory_gb_per_cpu), 0)
 
-    charge = hours * (
-        cpu_charge_table[cpus]
-        - cpu_charge_table[cpus] * (cpu_hyperthread * cpu_hyperthread_discount)
-        + memory_charge_table[above_nominal_memory_gb]
-    )
+    charge = {}
+    charge["cpu"]    = hours * cpu_charge_table[cpus] * (1 - (cpu_hyperthread * cpu_hyperthread_discount))
+    charge["memory"] = hours * memory_charge_table[above_nominal_memory_gb]
 
     return charge
 
@@ -103,10 +107,9 @@ def gpu_2022(ad):
     above_nominal_cpus_per_gpu = max((cpus - 16 * gpus) / gpus, 0)
     above_nominal_memory_gb_per_gpu = max((memory_gb - 128 * gpus) / gpus, 0)
 
-    charge = hours * (
-        gpu_charge_table[gpus]
-        + cpu_charge_table[above_nominal_cpus_per_gpu]
-        + memory_charge_table[above_nominal_memory_gb_per_gpu]
-    )
+    charge = {}
+    charge["gpu"] = hours * gpu_charge_table[gpus]
+    charge["cpu"] = hours * cpu_charge_table[above_nominal_cpus_per_gpu]
+    charge["memory"] = hours * memory_charge_table[above_nominal_memory_gb_per_gpu]
 
     return charge

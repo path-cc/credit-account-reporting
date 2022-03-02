@@ -113,28 +113,23 @@ def main(
 
     es_client = connect(es_host, es_user, es_pass, es_use_https, es_ca_certs)
 
-    previous_account_data = {}
-    today_charge_data = {}
     for missing_snapshot_date in get_missing_snapshot_dates(snapshot_dir):
-        today_charge_data = compute_daily_charges(
+        compute_daily_charges(
             es_client,
             missing_snapshot_date,
             account_index,
             usage_index,
             charge_index,
-            resource_name_attr,
             account_name_attr,
             dry_run,
         )
-        previous_account_data.update(apply_daily_charges(
+        apply_daily_charges(
             es_client,
             missing_snapshot_date,
             account_index,
             charge_index,
-            previous_account_data,
-            today_charge_data,
             dry_run,
-        ))
+        )
         snapshot_accounts(
             es_client, account_index, snapshot_dir, missing_snapshot_date, dry_run
         )
