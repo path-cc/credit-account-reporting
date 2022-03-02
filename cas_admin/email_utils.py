@@ -123,9 +123,7 @@ def generate_weekly_accounts_report(
     def col_html(x):
         try:
             x = float(x)
-            return (
-                f"""<td style="text-align: right; border: 1px solid black">{x:,.1f}</td>"""
-            )
+            return f"""<td style="text-align: right; border: 1px solid black">{x:,.1f}</td>"""
         except ValueError:
             return f"""<td style="text-align: left; border: 1px solid black">{x}</td>"""
 
@@ -133,9 +131,7 @@ def generate_weekly_accounts_report(
     i_row = 0
     html += f"""<tr style="{row_style(0)}">\n"""
     for i_col, (column_id, column_name) in enumerate(columns.items()):
-        html += (
-            f"""<th style="text-align: center; border: 1px solid black">{column_name}</th>"""
-        )
+        html += f"""<th style="text-align: center; border: 1px solid black">{column_name}</th>"""
         worksheet.write(i_row, i_col, column_name, xlsx_header_fmt)
     html += "</tr>\n"
 
@@ -206,9 +202,7 @@ def generate_weekly_account_owner_report(
     def col_style(x):
         try:
             x = float(x)
-            return (
-                f"""<td style="text-align: right; border: 1px solid black; padding: 4px">{x:,.1f}</td>"""
-            )
+            return f"""<td style="text-align: right; border: 1px solid black; padding: 4px">{x:,.1f}</td>"""
         except ValueError:
             return f"""<td style="text-align: left; border: 1px solid black; padding: 4px">{x}</td>"""
 
@@ -231,9 +225,7 @@ def generate_weekly_account_owner_report(
     i_row = 0
     html += f"""<tr>\n"""
     for i_col, (column_id, column_name) in enumerate(account_columns.items()):
-        html += (
-            f"""<th style="text-align: center; border: 1px solid black; padding: 4px">{column_name}</th>"""
-        )
+        html += f"""<th style="text-align: center; border: 1px solid black; padding: 4px">{column_name}</th>"""
         account_worksheet.write(i_row, i_col, column_name, xlsx_header_fmt)
     html += "</tr>\n"
 
@@ -263,9 +255,7 @@ def generate_weekly_account_owner_report(
     for i_col, col in enumerate(account_columns):
         val = row[col]
         if col == "percent_credits_used":
-            html += (
-                f"""<td style="text-align: right; border: 1px solid black; padding: 4px">{val:.1%}</td>"""
-            )
+            html += f"""<td style="text-align: right; border: 1px solid black; padding: 4px">{val:.1%}</td>"""
             account_worksheet.write(i_row, i_col, val, xlsx_percent_fmt)
         else:
             html += col_style(val)
@@ -318,15 +308,17 @@ def generate_weekly_account_owner_report(
     i_row = 0
     html += f"""<tr>\n"""
     for i_col, (column_id, column_name) in enumerate(charge_columns.items()):
-        html += (
-            f"""<th style="text-align: center; border: 1px solid black; padding: 4px">{column_name}</th>"""
-        )
+        html += f"""<th style="text-align: center; border: 1px solid black; padding: 4px">{column_name}</th>"""
         charges_worksheet.write(i_row, i_col, column_name, xlsx_header_fmt)
     html += """</tr>\n"""
 
     # Get row data
     rows = get_charge_data(
-        es_client, start_date=starting_week_date, end_date=starting_week_date + timedelta(days=7), account=account, index=charge_index
+        es_client,
+        start_date=starting_week_date,
+        end_date=starting_week_date + timedelta(days=7),
+        account=account,
+        index=charge_index,
     )
     rows.sort(key=itemgetter("date", "user_id", "resource_name"))
 

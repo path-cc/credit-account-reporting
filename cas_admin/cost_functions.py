@@ -64,7 +64,11 @@ def cpu_2022(ad):
     above_nominal_memory_gb = max(memory_gb - (cpus * nominal_memory_gb_per_cpu), 0)
 
     charge = {}
-    charge["cpu"]    = hours * cpu_charge_table[cpus] * (1 - (cpu_hyperthread * cpu_hyperthread_discount))
+    charge["cpu"] = (
+        hours
+        * cpu_charge_table[cpus]
+        * (1 - (cpu_hyperthread * cpu_hyperthread_discount))
+    )
     charge["memory"] = hours * memory_charge_table[above_nominal_memory_gb]
 
     return charge

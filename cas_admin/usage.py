@@ -14,7 +14,13 @@ import cas_admin.cost_functions as cost_functions
 
 
 def display_charges(
-    es_client, start_date, end_date, account=None, collapse_users=False, collapse_resources=False, index="cas-daily-charge-records-*",
+    es_client,
+    start_date,
+    end_date,
+    account=None,
+    collapse_users=False,
+    collapse_resources=False,
+    index="cas-daily-charge-records-*",
 ):
     """Displays charges given a time range"""
 
@@ -26,7 +32,7 @@ def display_charges(
     if not collapse_resources:
         columns["resource_name"] = "Resource"
     columns["total_charges"] = "Charge"
-    
+
     charge_data = get_charge_data(
         es_client, start_date, end_date, account=account, index=index
     )
@@ -40,7 +46,11 @@ def display_charges(
         last_key = None
         total_charges = 0.0
         for charge_info in charge_data:
-            key = {"date": charge_info["date"], "account_id": charge_info["account_id"], "user_id": charge_info["user_id"]}
+            key = {
+                "date": charge_info["date"],
+                "account_id": charge_info["account_id"],
+                "user_id": charge_info["user_id"],
+            }
             if not last_key:
                 last_key = key.copy()
             if key != last_key:
@@ -61,7 +71,11 @@ def display_charges(
         last_key = None
         total_charges = 0.0
         for charge_info in charge_data:
-            key = {"date": charge_info["date"], "account_id": charge_info["account_id"], "resource_name": charge_info["resource_name"]}
+            key = {
+                "date": charge_info["date"],
+                "account_id": charge_info["account_id"],
+                "resource_name": charge_info["resource_name"],
+            }
             if not last_key:
                 last_key = key.copy()
             if key != last_key:
@@ -150,7 +164,9 @@ def compute_daily_charges(
                         f"WARNING: Negative cost computed for account {account} with usage from following job ad, ignoring:\n{usage_row}",
                         err=True,
                     )
-                user_charges[resource_name] = user_charges.get(resource_name, 0.0) + resource_charge
+                user_charges[resource_name] = (
+                    user_charges.get(resource_name, 0.0) + resource_charge
+                )
             account_charges[user] = user_charges
 
         # Create charge docs
@@ -165,7 +181,9 @@ def compute_daily_charges(
                     "total_charges": resource_charge,
                 }
                 doc_id = f"{account}#{date}#{user}#{resource_name}"
-                account_charge_docs.append({"_index": charge_index, "_id": doc_id, "_source": doc_source})
+                account_charge_docs.append(
+                    {"_index": charge_index, "_id": doc_id, "_source": doc_source}
+                )
 
         # Upload charges
         if not dry_run:
@@ -222,11 +240,12 @@ def apply_daily_charges(
         updated_accounts[account]["total_charges"] += charge_info["total_charges"]
         updated_accounts[account]["last_charge_date"] = str(date)
 
-
     updated_account_docs = []
     for account, updated_account in updated_accounts.items():
         doc_id = account
-        updated_account_docs.append({"_index": account_index, "_id": doc_id, "_source": updated_account})
+        updated_account_docs.append(
+            {"_index": account_index, "_id": doc_id, "_source": updated_account}
+        )
 
     # Do a bulk upload.
     if not dry_run:

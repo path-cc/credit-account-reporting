@@ -36,7 +36,7 @@ def get_missing_snapshot_dates(snapshot_dir):
     can make sure a snapshot is made (in order) since START"""
     missing_snapshots = []
     n_days = (YESTERDAY - START).days
-    for n_day in range(n_days+1):
+    for n_day in range(n_days + 1):
         this_date = START + timedelta(days=n_day)
         snapshot_file = snapshot_dir / f"cas-credit-accounts_{this_date}.json"
         if not snapshot_file.exists():

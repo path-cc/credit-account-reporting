@@ -322,7 +322,9 @@ def get_charges(es_client, date, name, by_user, by_resource, totals, es_index):
     if totals:
         by_user = True
         by_resource = True
-    display_charges(es_client, start_date, end_date, name, by_resource, by_user, es_index)
+    display_charges(
+        es_client, start_date, end_date, name, by_resource, by_user, es_index
+    )
 
 
 if __name__ == "__main__":
