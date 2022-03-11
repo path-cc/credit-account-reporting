@@ -74,7 +74,7 @@ Account AliceGroup updated.
 List all charges from Feb 23, 2022
 ```bash
 $ cas_admin get charges --date 2022-02-23
-Date       Account      User                               Resource Charge
+Date       Account      User                              Resource Charge
 2022-02-23 GregsCookies jason.patton@submit.chtc.wisc.edu cpu         0.4
 2022-02-23 GregsCookies jason.patton@submit.chtc.wisc.edu memory      0.0
 ```
