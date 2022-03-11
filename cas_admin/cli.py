@@ -230,7 +230,7 @@ def get_accounts(es_client, name, sortby, reverse, es_index):
 @click.option(
     "--totals",
     is_flag=True,
-    help="Display account totals only (implies --by-user --by-resource)",
+    help="Display account totals only",
 )
 @click.option("--es_index", default="cas-daily-charge-records-*", hidden=True)
 @click.pass_obj

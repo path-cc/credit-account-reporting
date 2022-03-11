@@ -74,8 +74,9 @@ Account AliceGroup updated.
 List all charges from Feb 23, 2022
 ```bash
 $ cas_admin get charges --date 2022-02-23
-Date       Account      Charge Resource
-2022-02-23 GregsCookies    0.6 UNKNOWN
+Date       Account      User                               Resource Charge
+2022-02-23 GregsCookies jason.patton@submit.chtc.wisc.edu cpu         0.4
+2022-02-23 GregsCookies jason.patton@submit.chtc.wisc.edu memory      0.0
 ```
 
 ### cas_admin full command documentation
@@ -174,6 +175,9 @@ Usage: cas_admin get charges [OPTIONS]
 Options:
   --date [%Y-%m-%d]    Display charges from given date, defaults to yesterday.
   --name ACCOUNT_NAME  Display charges only for credit account ACCOUNT_NAME
+  --by-user            Display charges totaled by users
+  --by-resource        Display charges totaled by resource
+  --totals             Display account totals only
 ```
 
 ## License
