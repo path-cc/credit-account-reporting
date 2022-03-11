@@ -26,7 +26,7 @@ Available commands are:
 * `cas_admin add credits` - Add credits to a credit account
 * `cas_admin get charges` - View credit charges for a given date
 
-To get help on any of these commands, use --help after the command, for example:
+To get help on any of these commands, add `--help` after the command, for example:
 ```bash
 $ cas_admin create account --help
 ```
