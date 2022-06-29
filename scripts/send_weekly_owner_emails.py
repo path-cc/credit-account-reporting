@@ -25,6 +25,8 @@ IS_MONTHLY = date.today().day <= 7
 @click.option("--cc", "cc_addrs", multiple=True, default=[])
 @click.option("--bcc", "bcc_addrs", multiple=True, default=[])
 @click.option("--admin", "admin_addrs", multiple=True, default=[])
+@click.option("--account", "account_ids", multiple=True, default=[])
+@click.option("--force", "force_send", is_flag=True)
 @click.option("--account_index", default="cas-credit-accounts")
 @click.option("--charge_index", default="cas-daily-charge-records-*")
 @click.option("--es_host", envvar="ES_HOST", default="localhost")
@@ -53,6 +55,8 @@ def main(
     cc_addrs,
     bcc_addrs,
     admin_addrs,
+    account_ids,
+    force_send,
 ):
     es_client = connect(es_host, es_user, es_pass, es_use_https, es_ca_certs)
 
@@ -65,6 +69,8 @@ def main(
     for account_id, owner_email in get_account_emails(
         es_client, index=account_index
     ).items():
+        if len(account_ids) > 0 and account_id not in account_ids:
+            continue
         subject = f"{subject_tmpl} for {account_id}"
         all_to_addrs = list(to_addrs) + [owner_email]
         try:
@@ -78,7 +84,7 @@ def main(
                 charge_index,
             )
             html = attachments.pop("html")
-            if IS_MONTHLY or account_id in active_accounts:
+            if force_send or IS_MONTHLY or account_id in active_accounts:
                 send_email(
                     from_addr,
                     list(all_to_addrs),

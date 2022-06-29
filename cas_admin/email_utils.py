@@ -193,6 +193,7 @@ def generate_weekly_account_owner_report(
     xlsx_numeric_fmt = workbook.add_format({"num_format": "#,##0.0"})
     xlsx_percent_fmt = workbook.add_format({"num_format": "#,##0.0%"})
     xlsx_delta_fmt = workbook.add_format({"num_format": "+#,##0.0;-#,##0.0;0"})
+    xlsx_delta_pct_fmt = workbook.add_format({"num_format": "+#,##0.0\%;-#,##0.0\%;0\%"})
 
     def row_style(i):
         if i % 2 == 1:
@@ -277,20 +278,23 @@ def generate_weekly_account_owner_report(
         # Add row data to html and xlsx
         i_row = 2
         html += """<tr>\n"""
-        merge_to_col = list(account_columns.keys()).index("total_credits")
+        merge_to_col = list(account_columns.keys()).index("type")
         for i_col, col in enumerate(account_columns):
-            if not (i_col == 0 or col in {"total_credits", "total_charges"}):
-                if i_col > merge_to_col:
-                    html += """<td style="border-style: none"></td>"""
-            elif i_col == 0:
+            if i_col == 0:
                 val = "Change since last report"
-                html += f"""<td style="text-align: left; border-style: none; padding: 4px" colspan="{merge_to_col}">{val}</td>"""
-                account_worksheet.write(i_row, i_col, val)
-                account_worksheet.merge_range(i_row, i_col, i_row, merge_to_col)
-            else:
+                html += f"""<td style="text-align: left; border-style: none; padding: 4px" colspan="{merge_to_col+1}">{val}</td>"""
+                account_worksheet.merge_range(i_row, i_col, i_row, merge_to_col, val)
+            elif col == "percent_credits_used":
+                val = row[col] - last_row[col]
+                html += f"""<td style="text-align: right; border: 1px solid black; padding: 4px">{val:+,.1f}%</td>"""
+                account_worksheet.write(i_row, i_col, val, xlsx_delta_pct_fmt)
+            elif col in {"total_credits", "total_charges", "remaining_credits"}:
                 val = row[col] - last_row[col]
                 html += f"""<td style="text-align: right; border: 1px solid black; padding: 4px">{val:+,.1f}</td>"""
                 account_worksheet.write(i_row, i_col, val, xlsx_delta_fmt)
+            else:
+                if i_col > merge_to_col:
+                    html += """<td style="border-style: none"></td>"""
         html += """</tr>\n"""
     html += """</table>\n"""
 
