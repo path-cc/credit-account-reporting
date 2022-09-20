@@ -58,7 +58,7 @@ def cpu_2022(ad):
 
     cpus = ad.get("RequestCpus", 1)
     cpu_hyperthread = ad.get("IsHyperthreadCpu", False)
-    memory_gb = ad.get("RequestMemory", 0) / 1000
+    memory_gb = ad.get("RequestMemory", 0) / 1024
     hours = ad.get("RemoteWallClockTime", 0) / 3600
 
     above_nominal_memory_gb = max(memory_gb - (cpus * nominal_memory_gb_per_cpu), 0)
@@ -105,7 +105,7 @@ def gpu_2022(ad):
 
     gpus = ad.get("RequestGpus", 0)
     cpus = ad.get("RequestCpus", 1)
-    memory_gb = ad.get("RequestMemory", 0) / 1000
+    memory_gb = ad.get("RequestMemory", 0) / 1024
     hours = ad.get("RemoteWallClockTime", 0) / 3600
 
     above_nominal_cpus_per_gpu = max((cpus - 16 * gpus) / gpus, 0)
