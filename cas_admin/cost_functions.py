@@ -65,11 +65,12 @@ def cpu_2022(ad):
 
     charge = {}
     charge["cpu"] = (
-        hours
+        cpus
+        * hours
         * cpu_charge_table[cpus]
         * (1 - (cpu_hyperthread * cpu_hyperthread_discount))
     )
-    charge["memory"] = hours * memory_charge_table[above_nominal_memory_gb]
+    charge["memory"] = memory_gb * hours * memory_charge_table[above_nominal_memory_gb]
 
     return charge
 
@@ -112,8 +113,8 @@ def gpu_2022(ad):
     above_nominal_memory_gb_per_gpu = max((memory_gb - 128 * gpus) / gpus, 0)
 
     charge = {}
-    charge["gpu"] = hours * gpu_charge_table[gpus]
-    charge["cpu"] = hours * cpu_charge_table[above_nominal_cpus_per_gpu]
-    charge["memory"] = hours * memory_charge_table[above_nominal_memory_gb_per_gpu]
+    charge["gpu"] = gpus * hours * gpu_charge_table[gpus]
+    charge["cpu"] = cpus * hours * cpu_charge_table[above_nominal_cpus_per_gpu]
+    charge["memory"] = memory_gb * hours * memory_charge_table[above_nominal_memory_gb_per_gpu]
 
     return charge
