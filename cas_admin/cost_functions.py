@@ -109,8 +109,12 @@ def gpu_2022(ad):
     memory_gb = ad.get("RequestMemory", 0) / 1024
     hours = ad.get("RemoteWallClockTime", 0) / 3600
 
-    above_nominal_cpus_per_gpu = max((cpus - 16 * gpus) / gpus, 0)
-    above_nominal_memory_gb_per_gpu = max((memory_gb - 128 * gpus) / gpus, 0)
+    if gpus > 0:
+        above_nominal_cpus_per_gpu = max((cpus - 16 * gpus) / gpus, 0)
+        above_nominal_memory_gb_per_gpu = max((memory_gb - 128 * gpus) / gpus, 0)
+    else:
+        above_nominal_cpus_per_gpu = cpus
+        above_nominal_memory_gb_per_gpu = memory_gb
 
     charge = {}
     charge["gpu"] = gpus * hours * gpu_charge_table[gpus]
