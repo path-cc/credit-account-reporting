@@ -1,6 +1,15 @@
 from collections import OrderedDict as _OrderedDict
 
 
+def get_clean(ad, col, default_value):
+    """Helper function to deal with None values in ads"""
+    value = ad.get(col, default_value)
+    if value is None:
+        return default_value
+    else:
+        return value
+
+
 class _charge_table(_OrderedDict):
     """Small wrapper around OrderedDict that returns the value
     associated with the largest key smaller than the requested
@@ -56,10 +65,10 @@ def cpu_2022(ad):
     cpu_hyperthread_discount = 0.4
     nominal_memory_gb_per_cpu = 2
 
-    cpus = ad.get("RequestCpus", 1)
-    cpu_hyperthread = ad.get("IsHyperthreadCpu", False)
-    memory_gb = ad.get("RequestMemory", 0) / 1024
-    hours = ad.get("RemoteWallClockTime", 0) / 3600
+    cpus = get_clean(ad, "RequestCpus", 1)
+    cpu_hyperthread = get_clean(ad, "IsHyperthreadCpu", False)
+    memory_gb = get_clean(ad, "RequestMemory", 0) / 1024
+    hours = get_clean(ad, "RemoteWallClockTime", 0) / 3600
 
     above_nominal_memory_gb = max(memory_gb - (cpus * nominal_memory_gb_per_cpu), 0)
 
@@ -104,10 +113,10 @@ def gpu_2022(ad):
     nominal_cpus_per_gpu = 16
     nominal_memory_gb_per_gpu = 2
 
-    gpus = ad.get("RequestGpus", 0)
-    cpus = ad.get("RequestCpus", 1)
-    memory_gb = ad.get("RequestMemory", 0) / 1024
-    hours = ad.get("RemoteWallClockTime", 0) / 3600
+    gpus = get_clean(ad, "RequestGpus", 0)
+    cpus = get_clean(ad, "RequestCpus", 1)
+    memory_gb = get_clean(ad, "RequestMemory", 0) / 1024
+    hours = get_clean(ad, "RemoteWallClockTime", 0) / 3600
 
     if gpus > 0:
         above_nominal_cpus_per_gpu = max((cpus - 16 * gpus) / gpus, 0)
