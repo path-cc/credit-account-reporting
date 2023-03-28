@@ -14,6 +14,7 @@ def get_last_month(this_month=date.today().month):
 @click.command()
 @click.option(
     "--xlsx_directory",
+    envvar="CAS_MONTHLY_AGENCY_REPORT_DIR",
     default=Path("./monthly_agency_reports"),
     type=click.Path(file_okay=False, path_type=Path),
 )

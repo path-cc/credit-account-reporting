@@ -90,7 +90,9 @@ def create(ctx):
 @click.option("--email", required=True)
 @click.option("--type", "acct_type", required=True, type=click.Choice(ACCOUNT_TYPES))
 @click.option("--credits", "credts", metavar="CREDITS", type=float, default=0.0)
-@click.option("--es_index", default="cas-credit-accounts", hidden=True)
+@click.option(
+    "--es_index", envvar="CAS_ACCOUNT_INDEX", default="cas-credit-accounts", hidden=True
+)
 @click.pass_obj
 def create_account(es_client, name, owner, email, acct_type, credts, es_index):
     """Create a credit account named ACCOUNT_NAME.
@@ -119,7 +121,9 @@ def edit(ctx):
 @click.argument("name", metavar="ACCOUNT_NAME")
 @click.option("--owner", type=str, default=None)
 @click.option("--email", type=str, default=None)
-@click.option("--es_index", default="cas-credit-accounts", hidden=True)
+@click.option(
+    "--es_index", envvar="CAS_ACCOUNT_INDEX", default="cas-credit-accounts", hidden=True
+)
 @click.pass_obj
 def edit_account(es_client, name, owner, email, es_index):
     """Modify the owner and/or email of credit account named ACCOUNT_NAME."""
@@ -140,7 +144,9 @@ def add(ctx):
 )
 @click.argument("name", metavar="ACCOUNT_NAME")
 @click.argument("credts", metavar="CREDITS", type=float)
-@click.option("--es_index", default="cas-credit-accounts", hidden=True)
+@click.option(
+    "--es_index", envvar="CAS_ACCOUNT_INDEX", default="cas-credit-accounts", hidden=True
+)
 @click.pass_obj
 def add_account_credits(es_client, name, credts, es_index):
     """Add CREDITS credits to credit account ACCOUNT_NAME.
@@ -181,7 +187,9 @@ def get(ctx):
     help="Sort table by given field, defaults to Name.",
 )
 @click.option("--reverse", is_flag=True, default=False, help="Reverse table sorting.")
-@click.option("--es_index", default="cas-credit-accounts", hidden=True)
+@click.option(
+    "--es_index", envvar="CAS_ACCOUNT_INDEX", default="cas-credit-accounts", hidden=True
+)
 @click.pass_obj
 def get_accounts(es_client, name, sortby, reverse, es_index):
     """Display credit accounts."""
@@ -232,7 +240,12 @@ def get_accounts(es_client, name, sortby, reverse, es_index):
     is_flag=True,
     help="Display account totals only",
 )
-@click.option("--es_index", default="cas-daily-charge-records-*", hidden=True)
+@click.option(
+    "--es_index",
+    envvar="CAS_CHARGE_INDEX_PATTERN",
+    default="cas-daily-charge-records-*",
+    hidden=True,
+)
 @click.pass_obj
 def get_charges(es_client, date, name, by_user, by_resource, totals, es_index):
     """Displays charges accrued by account(s) from a single day.

@@ -8,6 +8,7 @@ from cas_admin.email_utils import send_email, generate_weekly_accounts_report
 @click.command()
 @click.option(
     "--xlsx_directory",
+    envvar="CAS_WEEKLY_ACCOUNTS_REPORTS_DIR",
     default=Path("./weekly_accounts_reports"),
     type=click.Path(file_okay=False, path_type=Path),
 )
@@ -17,7 +18,9 @@ from cas_admin.email_utils import send_email, generate_weekly_accounts_report
 @click.option("--cc", "cc_addrs", multiple=True, default=[])
 @click.option("--bcc", "bcc_addrs", multiple=True, default=[])
 @click.option("--admin", "admin_addrs", multiple=True, default=[])
-@click.option("--account_index", default="cas-credit-accounts")
+@click.option(
+    "--account_index", envvar="CAS_ACCOUNT_INDEX", default="cas-credit-accounts"
+)
 @click.option("--es_host", envvar="ES_HOST", default="localhost")
 @click.option("--es_user", envvar="ES_USER")
 @click.option("--es_pass", envvar="ES_PASS")
