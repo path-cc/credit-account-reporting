@@ -193,7 +193,9 @@ def generate_weekly_account_owner_report(
     xlsx_numeric_fmt = workbook.add_format({"num_format": "#,##0.0"})
     xlsx_percent_fmt = workbook.add_format({"num_format": "#,##0.0%"})
     xlsx_delta_fmt = workbook.add_format({"num_format": "+#,##0.0;-#,##0.0;0"})
-    xlsx_delta_pct_fmt = workbook.add_format({"num_format": "+#,##0.0\%;-#,##0.0\%;0\%"})
+    xlsx_delta_pct_fmt = workbook.add_format(
+        {"num_format": "+#,##0.0\%;-#,##0.0\%;0\%"}
+    )
 
     def row_style(i):
         if i % 2 == 1:
