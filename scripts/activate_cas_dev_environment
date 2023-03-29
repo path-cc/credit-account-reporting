@@ -10,3 +10,5 @@ export CAS_WEEKLY_BY_ACCOUNT_REPORTS_DIR="./dev-weekly_account_reports_by_accoun
 export CAS_MONTHLY_AGENCY_REPORT_DIR="./dev-monthly_agency_reports"
 
 export PS1="%cas-dev% $PS1"
+
+echo "CAS Development Environment loaded, make sure your version of the cas_admin tool is up to date."
