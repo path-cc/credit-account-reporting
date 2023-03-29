@@ -41,11 +41,7 @@ def clone_and_fix_template(es, template, prefix, ilm_policy, alias, dry_run=Fals
 def create_base_index(es, alias, prefix, dry_run=False):
     target_alias = f"{prefix}-{index}"
     target_index = f"{target_alias}-000001"
-    aliases = {
-        f"{target_alias}": {
-            "is_write_index": True
-        }
-    }
+    aliases = {f"{target_alias}": {"is_write_index": True}}
 
     if not dry_run:
         es.indices.create(index=target, aliases=aliases)
@@ -81,6 +77,7 @@ def main():
 
     # 4. Clear out existing credits
     clear_account_usage(es, ACCOUNT_INDEX, CLONE_PREFIX, dry_run=DRY_RUN)
+
 
 if __name__ == "__main__":
     main()

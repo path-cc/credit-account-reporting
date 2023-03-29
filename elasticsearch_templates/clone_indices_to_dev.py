@@ -73,8 +73,12 @@ def add_aliases(es, indices, alias, prefix, dry_run=False):
     target_indices = [f"{prefix}-{index}" for index in indices]
     target_alias = f"{prefix}-{alias}"
     if not dry_run:
-        es.indices.put_alias(index=target_indices[:-1], name=target_alias, body={"is_write_index": False})
-        es.indices.put_alias(index=target_indices[-1], name=target_alias, body={"is_write_index": True})
+        es.indices.put_alias(
+            index=target_indices[:-1], name=target_alias, body={"is_write_index": False}
+        )
+        es.indices.put_alias(
+            index=target_indices[-1], name=target_alias, body={"is_write_index": True}
+        )
     print(f"Added alias {target_alias} to cloned indices")
 
 
