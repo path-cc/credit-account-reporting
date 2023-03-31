@@ -1,0 +1,14 @@
+#!/bin/bash
+
+export CAS_ACCOUNT_INDEX="dev-cas-credit-accounts"
+export CAS_CHARGE_INDEX="dev-cas-daily-charge-records"
+export CAS_CHARGE_INDEX_PATTERN="dev-cas-daily-charge-records-*"
+export CAS_CREDIT_ACCOUNTS_SNAPSHOTS_DIR="./dev-cas-credit-accounts-snapshots"
+export CAS_WEEKLY_ACCOUNTS_SNAPSHOTS_DIR="./dev-weekly_accounts_snapshots"
+export CAS_WEEKLY_ACCOUNTS_REPORTS_DIR="./dev-weekly_accounts_snapshots"
+export CAS_WEEKLY_BY_ACCOUNT_REPORTS_DIR="./dev-weekly_account_reports_by_account"
+export CAS_MONTHLY_AGENCY_REPORT_DIR="./dev-monthly_agency_reports"
+
+export PS1="%cas-dev% $PS1"
+
+echo "CAS Development Environment loaded, make sure your version of the cas_admin tool is up to date."

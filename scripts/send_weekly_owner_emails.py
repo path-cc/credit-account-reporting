@@ -11,11 +11,13 @@ IS_MONTHLY = date.today().day <= 7
 @click.command()
 @click.option(
     "--xlsx_directory",
+    envvar="CAS_WEEKLY_BY_ACCOUNT_REPORTS_DIR",
     default=Path("./weekly_account_reports_by_account"),
     type=click.Path(file_okay=False, path_type=Path),
 )
 @click.option(
     "--snapshot_directory",
+    envvar="CAS_WEEKLY_ACCOUNTS_SNAPSHOTS_DIR",
     default=Path("./weekly_accounts_snapshots"),
     type=click.Path(file_okay=False, path_type=Path),
 )
@@ -27,8 +29,14 @@ IS_MONTHLY = date.today().day <= 7
 @click.option("--admin", "admin_addrs", multiple=True, default=[])
 @click.option("--account", "account_ids", multiple=True, default=[])
 @click.option("--force", "force_send", is_flag=True)
-@click.option("--account_index", default="cas-credit-accounts")
-@click.option("--charge_index", default="cas-daily-charge-records-*")
+@click.option(
+    "--account_index", envvar="CAS_ACCOUNT_INDEX", default="cas-credit-accounts"
+)
+@click.option(
+    "--charge_index",
+    envvar="CAS_CHARGE_INDEX_PATTERN",
+    default="cas-daily-charge-records-*",
+)
 @click.option("--es_host", envvar="ES_HOST", default="localhost")
 @click.option("--es_user", envvar="ES_USER")
 @click.option("--es_pass", envvar="ES_PASS")

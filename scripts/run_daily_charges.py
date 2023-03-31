@@ -58,7 +58,7 @@ cannot continue until {missing_snapshot[-1]} exists."""
 @click.option("--override_end_date", default=False, is_flag=True)
 @click.option(
     "--snapshot_dir",
-    envvar="CAS_SNAPSHOT_DIR",
+    envvar="CAS_CREDIT_ACCOUNTS_SNAPSHOTS_DIR",
     default=Path("./cas-credit-accounts-snapshots"),
     type=click.Path(file_okay=False, path_type=Path),
 )
