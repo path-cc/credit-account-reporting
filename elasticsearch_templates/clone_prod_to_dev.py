@@ -97,7 +97,7 @@ def main():
     clone_index(es, ACCOUNT_INDEX, CLONE_PREFIX, dry_run=DRY_RUN)
 
     # 4. Clone daily charge records
-    daily_charge_indices = list(es.indices.get_alias(CHARGE_ALIAS).keys())
+    daily_charge_indices = list(es.indices.get_alias(index=CHARGE_ALIAS).keys())
     daily_charge_indices.sort()
     for daily_charge_index in daily_charge_indices:
         clone_index(es, daily_charge_index, CLONE_PREFIX, dry_run=DRY_RUN)
