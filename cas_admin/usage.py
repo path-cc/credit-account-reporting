@@ -20,7 +20,8 @@ def display_charges(
     account=None,
     collapse_users=False,
     collapse_resources=False,
-    index="cas-daily-charge-records-*",
+    charge_index="cas-daily-charge-records-*",
+    account_index="cas-credit-accounts",
 ):
     """Displays charges given a time range"""
 
@@ -29,17 +30,25 @@ def display_charges(
     columns["account_id"] = "Account"
     if not collapse_users:
         columns["user_id"] = "User"
+    columns["charge_type"] = "JobType"
     if not collapse_resources:
         columns["resource_name"] = "Resource"
     columns["total_charges"] = "Charge"
 
     charge_data = get_charge_data(
-        es_client, start_date, end_date, account=account, index=index
+        es_client,
+        start_date,
+        end_date,
+        account=account,
+        charge_index=charge_index,
+        account_index=account_index,
     )
     if len(charge_data) == 0:
         click.echo(f"No charge records found.", err=True)
         sys.exit(1)
-    charge_data.sort(key=itemgetter("date", "account_id", "user_id", "resource_name"))
+    charge_data.sort(
+        key=itemgetter("date", "account_id", "user_id", "charge_type", "resource_name")
+    )
 
     if collapse_resources:
         new_charge_data = []
@@ -50,6 +59,7 @@ def display_charges(
                 "date": charge_info["date"],
                 "account_id": charge_info["account_id"],
                 "user_id": charge_info["user_id"],
+                "charge_type": charge_info["charge_type"],
             }
             if not last_key:
                 last_key = key.copy()
@@ -66,7 +76,9 @@ def display_charges(
         charge_data = new_charge_data
 
     if collapse_users:
-        charge_data.sort(key=itemgetter("date", "account_id", "resource_name"))
+        charge_data.sort(
+            key=itemgetter("date", "account_id", "charge_type", "resource_name")
+        )
         new_charge_data = []
         last_key = None
         total_charges = 0.0
@@ -74,6 +86,7 @@ def display_charges(
             key = {
                 "date": charge_info["date"],
                 "account_id": charge_info["account_id"],
+                "charge_type": charge_info["charge_type"],
                 "resource_name": charge_info["resource_name"],
             }
             if not last_key:
@@ -123,6 +136,15 @@ def display_charges(
         click.echo(" ".join(items))
 
 
+def get_job_type(job):
+    try:
+        if job.get("RequestGpus") > 0:
+            return "gpu"
+    except Exception:
+        pass
+    return "cpu"
+
+
 def compute_daily_charges(
     es_client,
     date,
@@ -142,8 +164,14 @@ def compute_daily_charges(
 
     for account_info in account_data:
         account = account_info["account_id"]
-        cost_function = getattr(cost_functions, account_info["type"])
-        account_charges = {}
+        cost_funcname = {
+            "cpu": account_info["cpu_charge_function"],
+            "gpu": account_info["gpu_charge_function"],
+        }
+        account_charges = {
+            "cpu": {},
+            "gpu": {},
+        }
 
         match_terms = {account_name_attr: account}
         for usage_row in get_usage_data(
@@ -153,9 +181,11 @@ def compute_daily_charges(
             match_terms=match_terms,
             index=usage_index,
         ):
+            job_type = get_job_type(usage_row)
+            cost_function = getattr(cost_functions, cost_funcname[job_type])
 
             user = f"{usage_row.get('Owner', 'UNKNOWN')}@{usage_row.get('ScheddName', 'UNKNOWN')}"
-            user_charges = account_charges.get(user, {})
+            user_charges = account_charges[job_type].get(user, {})
 
             resource_charges = cost_function(usage_row)
             for resource_name, resource_charge in resource_charges.items():
@@ -167,23 +197,27 @@ def compute_daily_charges(
                 user_charges[resource_name] = (
                     user_charges.get(resource_name, 0.0) + resource_charge
                 )
-            account_charges[user] = user_charges
+            account_charges[job_type][user] = user_charges
 
         # Create charge docs
         account_charge_docs = []
-        for user, user_charges in account_charges.items():
-            for resource_name, resource_charge in user_charges.items():
-                doc_source = {
-                    "account_id": account,
-                    "date": str(date),
-                    "user_id": user,
-                    "resource_name": resource_name,
-                    "total_charges": resource_charge,
-                }
-                doc_id = f"{account}#{date}#{user}#{resource_name}"
-                account_charge_docs.append(
-                    {"_index": charge_index, "_id": doc_id, "_source": doc_source}
-                )
+        for job_type in ["cpu", "gpu"]:
+            for user, user_charges in account_charges[job_type].items():
+                for resource_name, resource_charge in user_charges.items():
+                    doc_source = {
+                        "account_id": account,
+                        "charge_type": job_type,
+                        "charge_function": cost_funcname[job_type],
+                        "date": str(date),
+                        "user_id": user,
+                        "resource_name": resource_name,
+                        "total_charges": resource_charge,
+                        "cas_version": "v2",
+                    }
+                    doc_id = f"{account}#{date}#{user}#{job_type}#{resource_name}"
+                    account_charge_docs.append(
+                        {"_index": charge_index, "_id": doc_id, "_source": doc_source}
+                    )
 
         # Upload charges
         if not dry_run:
@@ -220,13 +254,17 @@ def apply_daily_charges(
         account_infos[account_info["account_id"]] = account_info
 
     charge_data = get_charge_data(
-        es_client, date, date + timedelta(days=1), index=charge_index
+        es_client,
+        date,
+        date + timedelta(days=1),
+        charge_index=charge_index,
+        account_index=account_index,
     )
 
     updated_accounts = {}
     for charge_info in charge_data:
-
         account = charge_info["account_id"]
+        charge_type = charge_info["charge_type"]
         if account not in account_infos:
             click.echo(
                 f"WARNING: No account '{account}' found in index '{account_index}', skipping applying charges",
@@ -237,8 +275,10 @@ def apply_daily_charges(
         if account not in updated_accounts:
             updated_accounts[account] = account_infos[account]
 
-        updated_accounts[account]["total_charges"] += charge_info["total_charges"]
-        updated_accounts[account]["last_charge_date"] = str(date)
+        updated_accounts[account][f"{charge_type}_charges"] += charge_info[
+            "total_charges"
+        ]
+        updated_accounts[account][f"{charge_type}_last_charge_date"] = str(date)
 
     updated_account_docs = []
     for account, updated_account in updated_accounts.items():

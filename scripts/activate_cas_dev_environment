@@ -3,6 +3,7 @@
 export CAS_ACCOUNT_INDEX="dev-cas-credit-accounts"
 export CAS_CHARGE_INDEX="dev-cas-daily-charge-records"
 export CAS_CHARGE_INDEX_PATTERN="dev-cas-daily-charge-records-*"
+export CAS_CHARGE_INDEX_TEMPLATE="dev_cas_daily_charge_records"
 export CAS_CREDIT_ACCOUNTS_SNAPSHOTS_DIR="./dev-cas-credit-accounts-snapshots"
 export CAS_WEEKLY_ACCOUNTS_SNAPSHOTS_DIR="./dev-weekly_accounts_snapshots"
 export CAS_WEEKLY_ACCOUNTS_REPORTS_DIR="./dev-weekly_accounts_snapshots"

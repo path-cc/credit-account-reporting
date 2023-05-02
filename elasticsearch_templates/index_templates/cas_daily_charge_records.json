@@ -16,13 +16,16 @@
         "mappings": {
             "properties": {
                 "account_id": {"type": "keyword"},
+                "charge_type": {"type": "keyword"},
+                "charge_function": {"type": "keyword"},
                 "date": {
-                    "type": "date", 
+                    "type": "date",
                     "format": "strict_date"
                 },
                 "resource_name": {"type": "keyword"},
                 "user_id": {"type": "keyword"},
-                "total_charges": {"type": "double"}
+                "total_charges": {"type": "double"},
+                "cas_version": {"type": "keyword"}
             }
         }
     }

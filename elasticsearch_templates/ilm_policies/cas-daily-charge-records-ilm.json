@@ -6,7 +6,7 @@
                 "actions": {
                     "rollover": {
                         "max_size": "20gb",
-                        "max_age": "30d"
+                        "max_age": "366d"
                     },
                     "set_priority": {
                         "priority": 100
@@ -14,11 +14,12 @@
                 }
             },
             "warm": {
-                "min_age": "92d",
+                "min_age": "183d",
                 "actions": {
-                    "forcemerge": {
-                        "max_num_segments": 1
-                    }
+                    "set_priority": {
+                        "priority": 50
+                    },
+                    "readonly": {}
                 }
             },
             "cold": {
@@ -26,15 +27,8 @@
                 "actions": {
                     "set_priority": {
                         "priority": 0
-                    }
-                }
-            },
-            "delete": {
-                "min_age": "731d",
-                "actions": {
-                    "delete": {
-                        "delete_searchable_snapshot": true
-                    }
+                    },
+                    "readonly": {}
                 }
             }
         }

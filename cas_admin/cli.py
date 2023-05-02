@@ -12,7 +12,8 @@ from cas_admin.account import (
 from cas_admin.usage import display_charges
 import cas_admin.cost_functions as cost_functions
 
-ACCOUNT_TYPES = [x for x in dir(cost_functions) if not x.startswith("_")]
+CPU_FUNCTIONS = [x for x in dir(cost_functions) if x.startswith("cpu")]
+GPU_FUNCTIONS = [x for x in dir(cost_functions) if x.startswith("gpu")]
 
 # Using a datetime.datetime object here since click does not generate
 # datetime.date objects when using click.DateTime() for option type.
@@ -88,23 +89,57 @@ def create(ctx):
 @click.argument("name", metavar="ACCOUNT_NAME")
 @click.option("--owner", required=True)
 @click.option("--email", required=True)
-@click.option("--type", "acct_type", required=True, type=click.Choice(ACCOUNT_TYPES))
-@click.option("--credits", "credts", metavar="CREDITS", type=float, default=0.0)
+@click.option("--project", default="")
+@click.option(
+    "--cpu_function",
+    default="cpu_2022",
+    type=click.Choice(CPU_FUNCTIONS, case_sensitive=False),
+)
+@click.option(
+    "--gpu_function",
+    default="gpu_2022",
+    type=click.Choice(GPU_FUNCTIONS, case_sensitive=False),
+)
+@click.option("--cpu_credits", "cpu_credts", metavar="CREDITS", type=float, default=0.0)
+@click.option("--gpu_credits", "gpu_credts", metavar="CREDITS", type=float, default=0.0)
 @click.option(
     "--es_index", envvar="CAS_ACCOUNT_INDEX", default="cas-credit-accounts", hidden=True
 )
 @click.pass_obj
-def create_account(es_client, name, owner, email, acct_type, credts, es_index):
+def create_account(
+    es_client,
+    name,
+    owner,
+    email,
+    project,
+    cpu_function,
+    gpu_function,
+    cpu_credts,
+    gpu_credts,
+    es_index,
+):
     """Create a credit account named ACCOUNT_NAME.
 
     The account name is case-sensitive, so be sure to double-check your input.
-    By default, the account will start with 0 credits, but you can provide a different starting amount.
+    By default, the account will start with 0 CPU and GPU credits, but you can provide a different starting amount.
 
     For proper command parsing, you may want to surround your input for the owner in quotes, for example:
 
     \b
-    cas_admin create account AliceGroup --owner "Alice Smith" --email alice.smith@wisc.edu --type cpu_2022"""
-    add_account(es_client, name, owner, email, acct_type, credts, es_index)
+    cas_admin create account AliceGroup --owner "Alice Smith" --email alice.smith@wisc.edu
+    """
+    add_account(
+        es_client,
+        name,
+        owner,
+        email,
+        project,
+        cpu_function,
+        gpu_function,
+        cpu_credts,
+        gpu_credts,
+        es_index,
+    )
 
 
 @cli.group(no_args_is_help=True, short_help="[account]", options_metavar=None)
@@ -121,13 +156,14 @@ def edit(ctx):
 @click.argument("name", metavar="ACCOUNT_NAME")
 @click.option("--owner", type=str, default=None)
 @click.option("--email", type=str, default=None)
+@click.option("--project", type=str, default=None)
 @click.option(
     "--es_index", envvar="CAS_ACCOUNT_INDEX", default="cas-credit-accounts", hidden=True
 )
 @click.pass_obj
-def edit_account(es_client, name, owner, email, es_index):
+def edit_account(es_client, name, owner, email, project, es_index):
     """Modify the owner and/or email of credit account named ACCOUNT_NAME."""
-    edit_owner(es_client, name, owner, email, es_index)
+    edit_owner(es_client, name, owner, email, project, es_index)
 
 
 @cli.group(no_args_is_help=True, short_help="[credits]", options_metavar=None)
@@ -143,24 +179,29 @@ def add(ctx):
     options_metavar=None,
 )
 @click.argument("name", metavar="ACCOUNT_NAME")
+@click.argument(
+    "credt_type",
+    metavar="CREDIT_TYPE",
+    type=click.Choice(["cpu", "gpu"], case_sensitive=False),
+)
 @click.argument("credts", metavar="CREDITS", type=float)
 @click.option(
     "--es_index", envvar="CAS_ACCOUNT_INDEX", default="cas-credit-accounts", hidden=True
 )
 @click.pass_obj
-def add_account_credits(es_client, name, credts, es_index):
-    """Add CREDITS credits to credit account ACCOUNT_NAME.
+def add_account_credits(es_client, name, credt_type, credts, es_index):
+    """Add CREDITS credits of type CREDIT_TYPE to credit account ACCOUNT_NAME.
 
-    For example, to add 10 credits to AliceGroup:
+    For example, to add 10 CPU credits to AliceGroup:
 
     \b
-    cas_admin add credits AliceGroup 10
+    cas_admin add credits AliceGroup cpu 10
 
     If needed, you can subtract credits from an account by specifying "--" first:
 
     \b
-    cas_admin add credits -- AliceGroup -10"""
-    add_credits(es_client, name, credts, es_index)
+    cas_admin add credits -- AliceGroup cpu -10"""
+    add_credits(es_client, name, credt_type, credts, es_index)
 
 
 @cli.group(no_args_is_help=True, short_help="[accounts|charges]", options_metavar=None)
@@ -180,7 +221,19 @@ def get(ctx):
 @click.option(
     "--sortby",
     type=click.Choice(
-        ["Name", "Type", "Owner", "Credits", "Charges", "PctUsed", "Remain"],
+        [
+            "Name",
+            "Type",
+            "Owner",
+            "CpuCredits",
+            "CpuCharges",
+            "PctCpuUsed",
+            "CpuRemain",
+            "GpuCredits",
+            "GpuCharges",
+            "PctGpuUsed",
+            "GpuRemain",
+        ],
         case_sensitive=False,
     ),
     default="Name",
@@ -198,10 +251,14 @@ def get_accounts(es_client, name, sortby, reverse, es_index):
         "name": "account_id",
         "type": "type",
         "owner": "owner",
-        "credits": "total_credits",
-        "charges": "total_charges",
-        "pctused": "percent_credits_used",
-        "remain": "remaining_credits",
+        "cpucredits": "cpu_credits",
+        "cpucharges": "cpu_charges",
+        "pctcpuused": "percent_cpu_credits_used",
+        "cpuremain": "remaining_cpu_credits",
+        "gpucredits": "gpu_credits",
+        "gpucharges": "gpu_charges",
+        "pctgpuused": "percent_gpu_credits_used",
+        "gpuremain": "remaining_gpu_credits",
     }
     if name is not None:
         display_account(es_client, name, es_index)
@@ -241,13 +298,28 @@ def get_accounts(es_client, name, sortby, reverse, es_index):
     help="Display account totals only",
 )
 @click.option(
-    "--es_index",
+    "--es_charge_index",
     envvar="CAS_CHARGE_INDEX_PATTERN",
     default="cas-daily-charge-records-*",
     hidden=True,
 )
+@click.option(
+    "--es_account_index",
+    envvar="CAS_ACCOUNT_INDEX",
+    default="cas-credit-accounts",
+    hidden=True,
+)
 @click.pass_obj
-def get_charges(es_client, date, name, by_user, by_resource, totals, es_index):
+def get_charges(
+    es_client,
+    date,
+    name,
+    by_user,
+    by_resource,
+    totals,
+    es_charge_index,
+    es_account_index,
+):
     """Displays charges accrued by account(s) from a single day.
 
     Defaults to displaying yesterday's charges from all credit accounts.
@@ -258,7 +330,14 @@ def get_charges(es_client, date, name, by_user, by_resource, totals, es_index):
         by_user = True
         by_resource = True
     display_charges(
-        es_client, start_date, end_date, name, by_resource, by_user, es_index
+        es_client,
+        start_date,
+        end_date,
+        name,
+        by_resource,
+        by_user,
+        es_charge_index,
+        es_account_index,
     )
 
 

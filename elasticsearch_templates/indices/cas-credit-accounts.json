@@ -10,17 +10,34 @@
             "account_id": {"type": "keyword"},
             "owner": {"type": "keyword"},
             "owner_email": {"type": "keyword"},
-            "type": {"type": "keyword"},
-            "total_credits": {"type": "double"},
-            "total_charges": {"type": "double"},
-            "last_credit_date": {
+            "owner_project": {"type": "keyword"},
+
+            "cpu_charge_function": {"type": "keyword"},
+            "cpu_credits": {"type": "double"},
+            "cpu_charges": {"type": "double"},
+            "cpu_last_credit_date": {
                 "type": "date", 
                 "format": "strict_date"
             },
-            "last_charge_date": {
-                "type": "date", 
+            "cpu_last_charge_date": {
+                "type": "date",
                 "format": "strict_date"
-            }
+            },
+
+            "gpu_charge_function": {"type": "keyword"},
+            "gpu_credits": {"type": "double"},
+            "gpu_charges": {"type": "double"},
+            "gpu_last_credit_date": {
+                "type": "date",
+                "format": "strict_date"
+            },
+            "gpu_last_charge_date": {
+                "type": "date",
+                "format": "strict_date"
+            },
+
+            "cas_version": {"type": "keyword"},
+            "v1_charge_function": {"type": "keyword"}
         }
     }
 }

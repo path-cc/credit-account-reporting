@@ -104,7 +104,6 @@ def main(
     es_use_https,
     es_ca_certs,
 ):
-
     if override_end_date:
         global YESTERDAY
         YESTERDAY = date.today()
