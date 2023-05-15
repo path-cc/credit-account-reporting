@@ -89,7 +89,6 @@ def generate_weekly_accounts_report(
 
     columns = OrderedDict()
     columns["account_id"] = "Account Name"
-    columns["type"] = "Account Type"
     columns["owner"] = "Account Owner"
     columns["percent_cpu_credits_used"] = "% CPU Credits Used"
     columns["cpu_credits"] = "CPU Credits"
@@ -337,6 +336,44 @@ def generate_weekly_account_owner_report(
         html += """</tr>\n"""
     html += """</table>\n"""
 
+    def get_bgcolor(charge_type=None, res_type=None):
+        if charge_type is None:
+            return ""
+        if res_type is None:
+            res_type = charge_type
+        rgbs = {
+            "cpu": (255, 238, 204),
+            "gpu": (204, 238, 255),
+        }
+        scales = {
+            "cpu": {
+                "cpu": 1.00,
+                "memory": 0.90,
+            },
+            "gpu": {
+                "cpu": 1.00,
+                "gpu": 0.95,
+                "memory": 0.90,
+            },
+        }
+        scale = scales.get(charge_type, {}).get(res_type, 1)
+        rgb_str = (f"{scale*rgb:.0f}" for rgb in rgbs.get(charge_type, (255, 255, 255)))
+        return f"background-color: rgb({', '.join(rgb_str)});"
+
+    def get_col_td(value="", charge_type=None, res_type=None):
+        bgcolor = get_bgcolor(charge_type, res_type)
+        try:
+            value = float(value)
+            style = f"text-align: right; border: 1px solid black; padding: 4px; {bgcolor}".strip().rstrip(
+                ";"
+            )
+            return f"""<td style="{style}">{value:,.1f}</td>"""
+        except ValueError:
+            style = f"text-align: left; border: 1px solid black; padding: 4px; {bgcolor}".strip().rstrip(
+                ";"
+            )
+            return f"""<td style="{style}">{value}</td>"""
+
     # Now create the charges report
     charge_columns = OrderedDict()
     charge_columns["date"] = "Date"
@@ -368,16 +405,41 @@ def generate_weekly_account_owner_report(
     rows.sort(key=itemgetter("date", "user_id", "charge_type", "resource_name"))
 
     # Add row data to html and xlsx
+    last_date = "1970-01-01"
+    last_user = "nobody@localhost"
     for i_row, row in enumerate(rows, start=1):
-        html += f"""<tr style="{row_style(i_row)}">\n"""
+        html += """<tr>\n"""
+        charge_type = None
+        res_type = None
+        new_date = True
+        new_user = True
         for i_col, col in enumerate(charge_columns):
             val = row[col]
-            html += col_style(val)
+            if col == "date":
+                this_date = val
+                if this_date == last_date:
+                    new_date = False
+            elif col == "user_id":
+                this_user = val
+                if (not new_date) and (this_user == last_user):
+                    new_user = False
+            elif col == "charge_type":
+                charge_type = val
+            elif col == "resource_name":
+                res_type = val
+            if (col == "date" and not new_date) or (col == "user_id" and not new_user):
+                html += get_col_td()
+            else:
+                html += get_col_td(
+                    value=val, charge_type=charge_type, res_type=res_type
+                )
             try:
                 charges_worksheet.write(i_row, i_col, float(val), xlsx_numeric_fmt)
             except ValueError:
                 charges_worksheet.write(i_row, i_col, val)
         html += """</tr>\n"""
+        last_date = this_date
+        last_user = this_user
     html += """</table>\n"""
 
     html += """</body>

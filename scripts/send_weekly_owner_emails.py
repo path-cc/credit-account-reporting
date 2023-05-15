@@ -27,6 +27,7 @@ IS_MONTHLY = date.today().day <= 7
 @click.option("--cc", "cc_addrs", multiple=True, default=[])
 @click.option("--bcc", "bcc_addrs", multiple=True, default=[])
 @click.option("--admin", "admin_addrs", multiple=True, default=[])
+@click.option("--no_email_owners", "no_email_owners", is_flag=True)
 @click.option("--account", "account_ids", multiple=True, default=[])
 @click.option("--force", "force_send", is_flag=True)
 @click.option(
@@ -63,6 +64,7 @@ def main(
     cc_addrs,
     bcc_addrs,
     admin_addrs,
+    no_email_owners,
     account_ids,
     force_send,
 ):
@@ -80,7 +82,9 @@ def main(
         if len(account_ids) > 0 and account_id not in account_ids:
             continue
         subject = f"{subject_tmpl} for {account_id}"
-        all_to_addrs = list(to_addrs) + [owner_email]
+        all_to_addrs = list(to_addrs)
+        if not no_email_owners:
+            all_to_addrs.append(owner_email)
         try:
             attachments = generate_weekly_account_owner_report(
                 es_client,
