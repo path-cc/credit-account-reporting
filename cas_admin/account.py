@@ -116,7 +116,9 @@ def display_all_accounts(
     col_size = {col: len(col_name) for col, col_name in columns.items()}
     for row in account_data:
         for col in columns:
-            col_size[col] = max(col_size[col], len(f"{row.get(col, ''):{col_format[col]}}"))
+            col_size[col] = max(
+                col_size[col], len(f"{row.get(col, ''):{col_format[col]}}")
+            )
 
     # Print cols
     items = []
@@ -214,7 +216,9 @@ def edit_owner(
 
     # Check that something is being modified
     if name is None and email is None and project is None:
-        click.echo("ERROR: One of owner name, email, or project must be modified", err=True)
+        click.echo(
+            "ERROR: One of owner name, email, or project must be modified", err=True
+        )
         sys.exit(1)
 
     # Check existing

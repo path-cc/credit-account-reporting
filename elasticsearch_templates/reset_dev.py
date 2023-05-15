@@ -68,9 +68,9 @@ def main():
     remove_existing_clones(es, CHARGE_ALIAS, CLONE_PREFIX, dry_run=DRY_RUN)
 
     # 2. Clone index template and fix for dev -- not really necessary after setup
-    #clone_and_fix_template(
+    # clone_and_fix_template(
     #    es, CHARGE_TEMPLATE, CLONE_PREFIX, ILM_POLICY, CHARGE_ALIAS, dry_run=DRY_RUN
-    #)
+    # )
 
     # 3. Create base index and alias
     create_base_index(es, CHARGE_ALIAS, CLONE_PREFIX, dry_run=DRY_RUN)
