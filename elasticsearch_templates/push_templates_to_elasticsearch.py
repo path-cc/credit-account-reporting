@@ -6,6 +6,7 @@ import json
 import sys
 import os
 
+
 ACCOUNT_INDEX = os.environ.get("CAS_ACCOUNT_INDEX", "cas-credit-accounts")
 CHARGE_INDEX_ILM = "cas-daily-charge-records-ilm"
 CHARGE_INDEX_TEMPLATE = os.environ.get(
@@ -36,39 +37,72 @@ def push_index_template(es, template_name, template_body):
     pprint(result)
 
 
+def reindex(es, from_index, to_index):
+    query = {"source": {"index": from_index}, "dest": {"index": to_index}}
+    result = es.reindex(body=query)
+    return result
+
+
+def clone_index(es, from_index, to_index):
+    es.indices.put_settings(
+        index=from_index,
+        body={"index.blocks.read_only": True},
+    )
+    if es.indices.exists(index=to_index):
+        es.indices.delete(index=to_index)
+        print(f"Removed existing index {to_index}")
+    es.indices.clone(
+        index=from_index,
+        target=to_index,
+        body={
+            "settings": {
+                "index.number_of_replicas": 0,
+                "index.blocks.read_only": False,
+            }
+        },
+        wait_for_active_shards=1,
+    )
+    es.indices.put_settings(
+        index=from_index,
+        body={"index.blocks.read_only": False},
+    )
+    print(f"Cloned index {from_index} to {to_index}")
+
+
 def push_index(es, index_name, index_body):
     if es.indices.exists(index=index_name):
-        print(f'Index "{index_name}" exists, attempting update')
-        try:
-            es.indices.close(index=index_name)
-            if "settings" in index_body:
-                # Remove non-updateable settings
-                if "number_of_shards" in index_body["settings"].get("index", {}):
-                    del index_body["settings"]["index"]["number_of_shards"]
-                result = es.indices.put_settings(
-                    index=index_name, body=index_body["settings"]
-                )
-                pprint(result)
-            if "mappings" in index_body:
-                result = es.indices.put_mapping(
-                    index=index_name, body=index_body["mappings"], write_index_only=True
-                )
-                pprint(result)
-            if "aliases" in index_body:
-                for alias_name, alias_body in index_body["aliases"].items():
-                    result = es.indices.put_alias(
-                        index=index_name, name=alias_name, body=alias_body
-                    )
-                    pprint(result)
-        except Exception as e:
-            es.indices.open(index=index_name)
-            raise
-        else:
-            es.indices.open(index=index_name)
+        if index_name.startswith("v1") or index_name.startswith("v2"):
+            print("Loop detected!")
+            sys.exit(1)
+        new_index_name = f"v2-{index_name}"
+        old_index_name = f"v1-{index_name}"
+
+        print(
+            f'Index "{index_name}" exists, attempting reindex using new index "{new_index_name}"'
+        )
+        push_index(es, new_index_name, index_body)
+        reindex(es, from_index=index_name, to_index=new_index_name)
+
+        print(f'Cloning from "{index_name}" to "{old_index_name}"')
+        clone_index(es, index_name, old_index_name)
+
+        print(f'Deleting original "{index_name}"')
+        aliases = (
+            es.indices.get_alias(index=index_name)
+            .get(index_name, {})
+            .get("aliases", {})
+        )
+        es.indices.delete(index=index_name)
+
+        print(f'Adding alias "{index_name}" to "{new_index_name}"')
+        es.indices.put_alias(index=new_index_name, name=index_name)
+        for alias_name, alias_body in aliases.items():
+            print(f'Adding alias "{alias_name}" to "{new_index_name}"')
+            es.indices.put_alias(index=new_index_name, name=alias_name, body=alias_body)
+
     else:
         print(f'Index "{index_name}" does not exist, creating new index')
         result = es.indices.create(index=index_name, **index_body)
-        pprint(result)
 
 
 def get_writable_charge_indices(es, index_alias):

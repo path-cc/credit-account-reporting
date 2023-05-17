@@ -55,30 +55,6 @@ def convert_v1_docs_to_v2_docs(v1_docs):
     return v2_docs
 
 
-def backup_accounts_v1_mapping(es, index, dry_run=False):
-    fname = f"{index}_mapping.{int(time())}.json"
-    v1_mappings = es.indices.get_mapping(index=index)[index]["mappings"]
-    with open(fname, "w") as f:
-        json.dump(v1_mappings, f, indent=4)
-    print()
-    print(f"Wrote a backup of {index} mapping to {fname}")
-    if dry_run:
-        print()
-        print("Old mappings:")
-        pprint(v1_mappings)
-
-
-def update_accounts_v2_mapping(es, index, json_file, dry_run=False):
-    with open(json_file) as f:
-        v2_mappings = json.load(f)["mappings"]
-    if dry_run:
-        print()
-        print("New mappings:")
-        pprint(v2_mappings)
-    if not dry_run:
-        es.indices.put_mapping(index=index, body=v2_mappings)
-
-
 def update_account_docs(es, index, docs, dry_run=False):
     print()
     for doc_id, doc in docs.items():
@@ -104,13 +80,7 @@ def main():
         print("New account docs:")
         pprint(v2_docs)
 
-    # 3. Backup old mapping
-    backup_accounts_v1_mapping(es, ACCOUNT_INDEX, DRY_RUN)
-
-    # 4. Update mapping
-    update_accounts_v2_mapping(es, ACCOUNT_INDEX, ACCOUNT_JSON_FILE, DRY_RUN)
-
-    # 5. Update docs
+    # 3. Update docs
     update_account_docs(es, ACCOUNT_INDEX, v2_docs, DRY_RUN)
 
 

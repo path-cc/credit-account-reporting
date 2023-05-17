@@ -6,7 +6,12 @@ from datetime import date, timedelta
 from operator import itemgetter
 from elasticsearch.helpers import bulk
 from cas_admin.connect import connect
-from cas_admin.query_utils import query_account, get_charge_data
+from cas_admin.query_utils import (
+    query_account,
+    get_charge_data,
+    get_account_data,
+    get_usage_data,
+)
 import cas_admin.cost_functions as cost_functions
 
 
@@ -119,7 +124,11 @@ def compute_missing_daily_charges(
                     }
                     doc_id = f"{account}#{date}#{user}#{job_type}#{resource_name}"
                     account_charge_docs.append(
-                        {"_index": charge_index, "_id": doc_id, "_source": doc_source}
+                        {
+                            "_index": new_charge_index,
+                            "_id": doc_id,
+                            "_source": doc_source,
+                        }
                     )
 
         # Upload charges
@@ -129,7 +138,7 @@ def compute_missing_daily_charges(
             )
             if len(error_infos) > 0:
                 click.echo(
-                    f"Failed to add {len(error_infos)} charges in index '{charge_index}' for account {account}:",
+                    f"Failed to add {len(error_infos)} charges in index '{new_charge_index}' for account {account}:",
                     err=True,
                 )
                 for i, error_info in enumerate(error_infos, start=1):
@@ -182,7 +191,8 @@ def apply_missing_daily_charges(
 
         if account not in updated_accounts:
             updated_accounts[account] = account_infos[account]
-
+        if f"{charge_type}_charges" not in updated_accounts[account]:
+            updated_accounts[account][f"{charge_type}_charges"] = 0.0
         updated_accounts[account][f"{charge_type}_charges"] += charge_info[
             "total_charges"
         ]
@@ -267,7 +277,7 @@ cannot continue until {missing_snapshot[-1]} exists."""
 )
 @click.option("--usage_index", envvar="CAS_USAGE_INDEX", default="path-schedd-*")
 @click.option(
-    "--old_charge_index", default="backup-{date.today()}-cas-daily-charge-records-*"
+    "--old_charge_index", default=f"backup-{date.today()}-cas-daily-charge-records-*"
 )
 @click.option(
     "--new_charge_index", envvar="CAS_CHARGE_INDEX", default="cas-daily-charge-records"
