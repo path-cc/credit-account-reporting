@@ -112,7 +112,7 @@ def display_charges(
     col_size = {col: len(col_name) for col, col_name in columns.items()}
     for row in charge_data:
         for col in columns:
-            col_size[col] = max(col_size[col], len(f"{row[col]:{col_format[col]}}"))
+            col_size[col] = max(col_size[col], len(f"{row.get(col, ''):{col_format[col] if col in row else ''}}"))
 
     # Print cols
     items = []
@@ -127,10 +127,11 @@ def display_charges(
     for row in charge_data:
         items = []
         for col in columns:
-            val = row[col]
             if col in {"total_charges"}:
+                val = row.get(col, 0)
                 val = f"{val:{col_format[col]}}".rjust(col_size[col])
             else:
+                val = row.get(col, "")
                 val = f"{val:{col_format[col]}}".ljust(col_size[col])
             items.append(val)
         click.echo(" ".join(items))

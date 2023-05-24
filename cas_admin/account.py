@@ -117,7 +117,7 @@ def display_all_accounts(
     for row in account_data:
         for col in columns:
             col_size[col] = max(
-                col_size[col], len(f"{row.get(col, ''):{col_format[col]}}")
+                col_size[col], len(f"{row.get(col, ''):{col_format[col] if col in row else ''}}")
             )
 
     # Print cols
@@ -142,7 +142,6 @@ def display_all_accounts(
     for row in account_data:
         items = []
         for col in columns:
-            val = row.get(col, "")
             if col in {
                 "cpu_credits",
                 "cpu_charges",
@@ -153,8 +152,10 @@ def display_all_accounts(
                 "remaining_gpu_credits",
                 "percent_gpu_credits_used",
             }:
+                val = row.get(col, 0)
                 val = f"{val:{col_format[col]}}".rjust(col_size[col])
             else:
+                val = row.get(col, "")
                 val = f"{val:{col_format[col]}}".ljust(col_size[col])
             items.append(val)
         click.echo(" ".join(items))
