@@ -35,7 +35,6 @@ def main():
 
     daily_charge_indices = list(es.indices.get_alias(index=CHARGE_ALIAS).keys())
     for daily_charge_index in daily_charge_indices:
-
         # 1. Clone daily charge records
         # Note that cloning will remove aliases automatically, yay!
         cloned_index = clone_index(es, daily_charge_index, CLONE_PREFIX)

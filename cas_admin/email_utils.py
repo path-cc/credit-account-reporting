@@ -89,12 +89,15 @@ def generate_weekly_accounts_report(
 
     columns = OrderedDict()
     columns["account_id"] = "Account Name"
-    columns["type"] = "Account Type"
     columns["owner"] = "Account Owner"
-    columns["percent_credits_used"] = "% Credits Used"
-    columns["total_credits"] = "Total Credits"
-    columns["total_charges"] = "Total Charges"
-    columns["remaining_credits"] = "Remaining Credits"
+    columns["percent_cpu_credits_used"] = "% CPU Credits Used"
+    columns["cpu_credits"] = "CPU Credits"
+    columns["cpu_charges"] = "CPU Charges"
+    columns["remaining_cpu_credits"] = "Remaining CPU Credits"
+    columns["percent_gpu_credits_used"] = "% GPU Credits Used"
+    columns["gpu_credits"] = "GPU Credits"
+    columns["gpu_charges"] = "GPU Charges"
+    columns["remaining_gpu_credits"] = "Remaining GPU Credits"
 
     date_str = str(starting_week_date)
 
@@ -136,7 +139,12 @@ def generate_weekly_accounts_report(
     html += "</tr>\n"
 
     # Get row data
-    addl_cols = ["percent_credits_used", "remaining_credits"]
+    addl_cols = [
+        "percent_cpu_credits_used",
+        "remaining_cpu_credits",
+        "percent_gpu_credits_used",
+        "remaining_gpu_credits",
+    ]
     rows = get_account_data(es_client, addl_cols=addl_cols, index=index)
 
     # Add row data to html and xlsx
@@ -144,7 +152,7 @@ def generate_weekly_accounts_report(
         html += f"""<tr style="{row_style(i_row)}">\n"""
         for i_col, col in enumerate(columns):
             val = row[col]
-            if col == "percent_credits_used":
+            if col in {"percent_cpu_credits_used", "percent_gpu_credits_used"}:
                 html += f"""<td style="text-align: right; border: 1px solid black">{val:.1%}</td>"""
                 worksheet.write(i_row, i_col, val, xlsx_percent_fmt)
             else:
@@ -212,11 +220,14 @@ def generate_weekly_account_owner_report(
     # First create the account report
     account_columns = OrderedDict()
     account_columns["account_id"] = "Account Name"
-    account_columns["type"] = "Account Type"
-    account_columns["percent_credits_used"] = "% Credits Used"
-    account_columns["total_credits"] = "Total Credits"
-    account_columns["total_charges"] = "Total Charges"
-    account_columns["remaining_credits"] = "Remaining Credits"
+    account_columns["percent_cpu_credits_used"] = "% CPU Credits Used"
+    account_columns["cpu_credits"] = "CPU Credits"
+    account_columns["cpu_charges"] = "CPU Charges"
+    account_columns["remaining_cpu_credits"] = "Remaining CPU Credits"
+    account_columns["percent_gpu_credits_used"] = "% GPU Credits Used"
+    account_columns["gpu_credits"] = "GPU Credits"
+    account_columns["gpu_charges"] = "GPU Charges"
+    account_columns["remaining_gpu_credits"] = "Remaining GPU Credits"
     account_columns["owner"] = "Account Owner"
     account_columns["owner_email"] = "Account Owner Email"
 
@@ -233,7 +244,12 @@ def generate_weekly_account_owner_report(
     html += "</tr>\n"
 
     # Get row data
-    addl_cols = ["percent_credits_used", "remaining_credits"]
+    addl_cols = [
+        "percent_cpu_credits_used",
+        "remaining_cpu_credits",
+        "percent_gpu_credits_used",
+        "remaining_gpu_credits",
+    ]
     rows = get_account_data(
         es_client, account=account, addl_cols=addl_cols, index=account_index
     )
@@ -277,6 +293,19 @@ def generate_weekly_account_owner_report(
         with last_snapshot_file.open() as f:
             last_row = json.load(f)
 
+        # Adjust for old version
+        if last_row.get("cas_version", "v1") == "v1":
+            v1_charge_function = last_row["type"]
+            orig = v1_charge_function[0:3]
+            new = "gpu" if orig_charge_type == "cpu" else "cpu"
+            last_row[f"{orig}_credits"] = last_row["total_credits"]
+            last_row[f"{orig}_charges"] = last_row["total_charges"]
+            last_row[f"remaining_{orig}_credits"] = last_row["remaining_credits"]
+            last_row[f"percent_{orig}_credits_used"] = last_row["percent_credits_used"]
+            last_row[f"{new}_credits"] = last_row[f"{new}_charges"] = 0.0
+            last_row[f"remaining_{new}_credits"] = 0.0
+            last_row[f"percent_{new}_credits_used"] = 0.0
+
         # Add row data to html and xlsx
         i_row = 2
         html += """<tr>\n"""
@@ -286,12 +315,19 @@ def generate_weekly_account_owner_report(
                 val = "Change since last report"
                 html += f"""<td style="text-align: left; border-style: none; padding: 4px" colspan="{merge_to_col+1}">{val}</td>"""
                 account_worksheet.merge_range(i_row, i_col, i_row, merge_to_col, val)
-            elif col == "percent_credits_used":
+            elif col in {"percent_cpu_credits_used", "percent_gpu_credits_used"}:
                 val = row[col] - last_row[col]
                 html += f"""<td style="text-align: right; border: 1px solid black; padding: 4px">{val:+,.1f}%</td>"""
                 account_worksheet.write(i_row, i_col, val, xlsx_delta_pct_fmt)
-            elif col in {"total_credits", "total_charges", "remaining_credits"}:
-                val = row[col] - last_row[col]
+            elif col in {
+                "cpu_credits",
+                "cpu_charges",
+                "remaining_cpu_credits",
+                "gpu_credits",
+                "gpu_charges",
+                "remaining_gpu_credits",
+            }:
+                val = row.get(col, 0) - last_row.get(col, 0)
                 html += f"""<td style="text-align: right; border: 1px solid black; padding: 4px">{val:+,.1f}</td>"""
                 account_worksheet.write(i_row, i_col, val, xlsx_delta_fmt)
             else:
@@ -300,10 +336,49 @@ def generate_weekly_account_owner_report(
         html += """</tr>\n"""
     html += """</table>\n"""
 
+    def get_bgcolor(charge_type=None, res_type=None):
+        if charge_type is None:
+            return ""
+        if res_type is None:
+            res_type = charge_type
+        rgbs = {
+            "cpu": (255, 238, 204),
+            "gpu": (204, 238, 255),
+        }
+        scales = {
+            "cpu": {
+                "cpu": 1.00,
+                "memory": 0.90,
+            },
+            "gpu": {
+                "cpu": 1.00,
+                "gpu": 0.95,
+                "memory": 0.90,
+            },
+        }
+        scale = scales.get(charge_type, {}).get(res_type, 1)
+        rgb_str = (f"{scale*rgb:.0f}" for rgb in rgbs.get(charge_type, (255, 255, 255)))
+        return f"background-color: rgb({', '.join(rgb_str)});"
+
+    def get_col_td(value="", charge_type=None, res_type=None):
+        bgcolor = get_bgcolor(charge_type, res_type)
+        try:
+            value = float(value)
+            style = f"text-align: right; border: 1px solid black; padding: 4px; {bgcolor}".strip().rstrip(
+                ";"
+            )
+            return f"""<td style="{style}">{value:,.1f}</td>"""
+        except ValueError:
+            style = f"text-align: left; border: 1px solid black; padding: 4px; {bgcolor}".strip().rstrip(
+                ";"
+            )
+            return f"""<td style="{style}">{value}</td>"""
+
     # Now create the charges report
     charge_columns = OrderedDict()
     charge_columns["date"] = "Date"
     charge_columns["user_id"] = "User"
+    charge_columns["charge_type"] = "JobType"
     charge_columns["resource_name"] = "Resource"
     charge_columns["total_charges"] = "Charges"
     charges_worksheet = workbook.add_worksheet("Charges summary")
@@ -324,21 +399,47 @@ def generate_weekly_account_owner_report(
         start_date=starting_week_date,
         end_date=starting_week_date + timedelta(days=7),
         account=account,
-        index=charge_index,
+        charge_index=charge_index,
+        account_index=account_index,
     )
-    rows.sort(key=itemgetter("date", "user_id", "resource_name"))
+    rows.sort(key=itemgetter("date", "user_id", "charge_type", "resource_name"))
 
     # Add row data to html and xlsx
+    last_date = "1970-01-01"
+    last_user = "nobody@localhost"
     for i_row, row in enumerate(rows, start=1):
-        html += f"""<tr style="{row_style(i_row)}">\n"""
+        html += """<tr>\n"""
+        charge_type = None
+        res_type = None
+        new_date = True
+        new_user = True
         for i_col, col in enumerate(charge_columns):
             val = row[col]
-            html += col_style(val)
+            if col == "date":
+                this_date = val
+                if this_date == last_date:
+                    new_date = False
+            elif col == "user_id":
+                this_user = val
+                if (not new_date) and (this_user == last_user):
+                    new_user = False
+            elif col == "charge_type":
+                charge_type = val
+            elif col == "resource_name":
+                res_type = val
+            if (col == "date" and not new_date) or (col == "user_id" and not new_user):
+                html += get_col_td()
+            else:
+                html += get_col_td(
+                    value=val, charge_type=charge_type, res_type=res_type
+                )
             try:
                 charges_worksheet.write(i_row, i_col, float(val), xlsx_numeric_fmt)
             except ValueError:
                 charges_worksheet.write(i_row, i_col, val)
         html += """</tr>\n"""
+        last_date = this_date
+        last_user = this_user
     html += """</table>\n"""
 
     html += """</body>
@@ -349,6 +450,7 @@ def generate_weekly_account_owner_report(
     return {"html": html, "xlsx_file": xlsx_file}
 
 
+### TODO
 # Add monthly NSF report
 def generate_monthly_agency_report(
     es_client,
@@ -357,7 +459,6 @@ def generate_monthly_agency_report(
     xlsx_directory=Path("./monthly_agency_reports"),
     index="cas-credit-accounts",
 ):
-
     date_str = str(starting_week_date)
 
     xlsx_directory = xlsx_directory / account

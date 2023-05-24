@@ -39,12 +39,12 @@ def clone_and_fix_template(es, template, prefix, ilm_policy, alias, dry_run=Fals
 
 
 def create_base_index(es, alias, prefix, dry_run=False):
-    target_alias = f"{prefix}-{index}"
+    target_alias = f"{prefix}-{alias}"
     target_index = f"{target_alias}-000001"
     aliases = {f"{target_alias}": {"is_write_index": True}}
 
     if not dry_run:
-        es.indices.create(index=target, aliases=aliases)
+        es.indices.create(index=target_index, aliases=aliases)
     print(f"Created base index {target_index} with alias {target_alias}")
 
 
@@ -52,7 +52,7 @@ def clear_account_usage(es, index, prefix, dry_run=False):
     target = f"{prefix}-{index}"
     body = {
         "script": {
-            "inline": "ctx._source.total_charges = 0",
+            "inline": "ctx._source.cpu_charges = 0; ctx._source.gpu_charges = 0;",
             "lang": "painless",
         }
     }
@@ -67,10 +67,10 @@ def main():
     # 1. Remove existing indices
     remove_existing_clones(es, CHARGE_ALIAS, CLONE_PREFIX, dry_run=DRY_RUN)
 
-    # 2. Clone index template and fix for dev
-    clone_and_fix_template(
-        es, CHARGE_TEMPLATE, CLONE_PREFIX, ILM_POLICY, CHARGE_ALIAS, dry_run=DRY_RUN
-    )
+    # 2. Clone index template and fix for dev -- not really necessary after setup
+    # clone_and_fix_template(
+    #    es, CHARGE_TEMPLATE, CLONE_PREFIX, ILM_POLICY, CHARGE_ALIAS, dry_run=DRY_RUN
+    # )
 
     # 3. Create base index and alias
     create_base_index(es, CHARGE_ALIAS, CLONE_PREFIX, dry_run=DRY_RUN)
