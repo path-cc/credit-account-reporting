@@ -155,17 +155,17 @@ def get_account_data(
         for col in addl_cols:
             # Do some column common calculations if add_cols is set
             if col == "remaining_cpu_credits":
-                row[col] = row["cpu_credits"] - row["cpu_charges"]
+                row[col] = row["cpu_credits"] - row.get("cpu_charges", 0)
             elif col == "remaining_gpu_credits":
-                row[col] = row["gpu_credits"] - row["gpu_charges"]
+                row[col] = row["gpu_credits"] - row.get("gpu_charges", 0)
             elif col == "percent_cpu_credits_used":
                 if row["cpu_credits"] > 1e-8:
-                    row[col] = row["cpu_charges"] / row["cpu_credits"]
+                    row[col] = row.get("cpu_charges", 0) / row["cpu_credits"]
                 else:
                     row[col] = 0.0
             elif col == "percent_gpu_credits_used":
                 if row["gpu_credits"] > 1e-8:
-                    row[col] = row["gpu_charges"] / row["gpu_credits"]
+                    row[col] = row.get("gpu_charges", 0) / row["gpu_credits"]
                 else:
                     row[col] = 0.0
             else:

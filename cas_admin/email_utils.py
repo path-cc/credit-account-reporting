@@ -327,7 +327,7 @@ def generate_weekly_account_owner_report(
                 "gpu_charges",
                 "remaining_gpu_credits",
             }:
-                val = row[col] - last_row[col]
+                val = row.get(col, 0) - last_row.get(col, 0)
                 html += f"""<td style="text-align: right; border: 1px solid black; padding: 4px">{val:+,.1f}</td>"""
                 account_worksheet.write(i_row, i_col, val, xlsx_delta_fmt)
             else:
