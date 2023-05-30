@@ -151,7 +151,19 @@ def generate_weekly_accounts_report(
     for i_row, row in enumerate(rows, start=1):
         html += f"""<tr style="{row_style(i_row)}">\n"""
         for i_col, col in enumerate(columns):
-            val = row[col]
+            if col in {
+                "cpu_credits",
+                "cpu_charges",
+                "remaining_cpu_credits",
+                "percent_cpu_credits_used",
+                "gpu_credits",
+                "gpu_charges",
+                "remaining_gpu_credits",
+                "percent_gpu_credits_used",
+            }:
+                val = row.get(col, 0)
+            else:
+                val = row.get(col, "")
             if col in {"percent_cpu_credits_used", "percent_gpu_credits_used"}:
                 html += f"""<td style="text-align: right; border: 1px solid black">{val:.1%}</td>"""
                 worksheet.write(i_row, i_col, val, xlsx_percent_fmt)
@@ -272,7 +284,19 @@ def generate_weekly_account_owner_report(
     i_row = 1
     html += """<tr>\n"""
     for i_col, col in enumerate(account_columns):
-        val = row[col]
+            if col in {
+                "cpu_credits",
+                "cpu_charges",
+                "remaining_cpu_credits",
+                "percent_cpu_credits_used",
+                "gpu_credits",
+                "gpu_charges",
+                "remaining_gpu_credits",
+                "percent_gpu_credits_used",
+            }:
+                val = row.get(col, 0)
+            else:
+                val = row.get(col, "")
         if col == "percent_credits_used":
             html += f"""<td style="text-align: right; border: 1px solid black; padding: 4px">{val:.1%}</td>"""
             account_worksheet.write(i_row, i_col, val, xlsx_percent_fmt)
@@ -316,7 +340,7 @@ def generate_weekly_account_owner_report(
                 html += f"""<td style="text-align: left; border-style: none; padding: 4px" colspan="{merge_to_col+1}">{val}</td>"""
                 account_worksheet.merge_range(i_row, i_col, i_row, merge_to_col, val)
             elif col in {"percent_cpu_credits_used", "percent_gpu_credits_used"}:
-                val = row[col] - last_row[col]
+                val = row.get(col, 0) - last_row.get(col, 0)
                 html += f"""<td style="text-align: right; border: 1px solid black; padding: 4px">{val:+,.1f}%</td>"""
                 account_worksheet.write(i_row, i_col, val, xlsx_delta_pct_fmt)
             elif col in {
@@ -414,7 +438,19 @@ def generate_weekly_account_owner_report(
         new_date = True
         new_user = True
         for i_col, col in enumerate(charge_columns):
-            val = row[col]
+            if col in {
+                "cpu_credits",
+                "cpu_charges",
+                "remaining_cpu_credits",
+                "percent_cpu_credits_used",
+                "gpu_credits",
+                "gpu_charges",
+                "remaining_gpu_credits",
+                "percent_gpu_credits_used",
+            }:
+                val = row.get(col, 0)
+            else:
+                val = row.get(col, "")
             if col == "date":
                 this_date = val
                 if this_date == last_date:
