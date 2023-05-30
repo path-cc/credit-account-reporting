@@ -284,19 +284,19 @@ def generate_weekly_account_owner_report(
     i_row = 1
     html += """<tr>\n"""
     for i_col, col in enumerate(account_columns):
-            if col in {
-                "cpu_credits",
-                "cpu_charges",
-                "remaining_cpu_credits",
-                "percent_cpu_credits_used",
-                "gpu_credits",
-                "gpu_charges",
-                "remaining_gpu_credits",
-                "percent_gpu_credits_used",
-            }:
-                val = row.get(col, 0)
-            else:
-                val = row.get(col, "")
+        if col in {
+            "cpu_credits",
+            "cpu_charges",
+            "remaining_cpu_credits",
+            "percent_cpu_credits_used",
+            "gpu_credits",
+            "gpu_charges",
+            "remaining_gpu_credits",
+            "percent_gpu_credits_used",
+        }:
+            val = row.get(col, 0)
+        else:
+            val = row.get(col, "")
         if col == "percent_credits_used":
             html += f"""<td style="text-align: right; border: 1px solid black; padding: 4px">{val:.1%}</td>"""
             account_worksheet.write(i_row, i_col, val, xlsx_percent_fmt)
