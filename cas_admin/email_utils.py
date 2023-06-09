@@ -343,7 +343,10 @@ def generate_weekly_account_owner_report(
             if i_col == 0:
                 val = "Change since last report"
                 html += f"""<td style="text-align: left; border-style: none; padding: 4px" colspan="{merge_to_col+1}">{val}</td>"""
-                account_worksheet.merge_range(i_row, i_col, i_row, merge_to_col, val)
+                if i_col == merge_to_col:
+                    account_worksheet.write(i_row, i_col, val)
+                else:
+                    account_worksheet.merge_range(i_row, i_col, i_row, merge_to_col, val)
             elif col in percent_cols:
                 val = row.get(col, 0) - last_row.get(col, 0)
                 html += f"""<td style="text-align: right; border: 1px solid black; padding: 4px">{val:+,.1f}%</td>"""
