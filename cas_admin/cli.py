@@ -223,8 +223,8 @@ def get(ctx):
     type=click.Choice(
         [
             "Name",
-            "Type",
             "Owner",
+            "Project",
             "CpuCredits",
             "CpuCharges",
             "PctCpuUsed",
@@ -249,8 +249,8 @@ def get_accounts(es_client, name, sortby, reverse, es_index):
     sortby = sortby.casefold()
     sort_map = {
         "name": "account_id",
-        "type": "type",
         "owner": "owner",
+        "project": "project",
         "cpucredits": "cpu_credits",
         "cpucharges": "cpu_charges",
         "pctcpuused": "percent_cpu_credits_used",

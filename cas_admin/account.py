@@ -36,6 +36,20 @@ def display_account(es_client, account, index="cas-credit-accounts"):
         "remaining_gpu_credits",
     ]
 
+    numeric_cols = {
+        "cpu_credits",
+        "cpu_charges",
+        "remaining_cpu_credits",
+        "gpu_credits",
+        "gpu_charges",
+        "remaining_gpu_credits",
+    }
+
+    percent_cols = {
+        "percent_cpu_credits_used",
+        "percent_gpu_credits_used",
+    }
+
     account_data = get_account_data(
         es_client, account=account, addl_cols=addl_cols, index=index
     )
@@ -52,18 +66,12 @@ def display_account(es_client, account, index="cas-credit-accounts"):
     account_info = account_data[0]
 
     for col, col_name in columns.items():
-        val = account_info.get(col, "")
-        if col in {
-            "cpu_credits",
-            "cpu_charges",
-            "remaining_cpu_credits",
-            "gpu_credits",
-            "gpu_charges",
-            "remaining_gpu_credits",
-        }:
-            val = f"{val:,.2f}"
-        elif col in {"percent_cpu_credits_used", "percent_gpu_credits_used"}:
-            val = f"{val:.2%}"
+        if col in numeric_cols:
+            val = f"{account_info.get(col, 0):,.2f}"
+        elif col in percent_cols:
+            val = f"{account_info.get(col, 0):.2%}"
+        else:
+            val = account_info.get(col, "")
         click.echo(f"{col_name}:\t{val}")
 
 
@@ -92,24 +100,36 @@ def display_all_accounts(
         "remaining_gpu_credits",
     ]
 
-    account_data = get_account_data(es_client, addl_cols=addl_cols, index=index)
-    if len(account_data) == 0:
-        click.echo(f"ERROR: No accounts found in index '{index}'", err=True)
-        sys.exit(1)
-    account_data.sort(key=itemgetter(sort_col, "account_id"), reverse=sort_reverse)
-
-    # Set col formats
-    col_format = {col: "" for col in columns}
-    for col in [
+    numeric_cols = {
         "cpu_credits",
         "cpu_charges",
         "remaining_cpu_credits",
         "gpu_credits",
         "gpu_charges",
         "remaining_gpu_credits",
-    ]:
+    }
+
+    percent_cols = {
+        "percent_cpu_credits_used",
+        "percent_gpu_credits_used",
+    }
+
+    account_data = get_account_data(es_client, addl_cols=addl_cols, index=index)
+    if len(account_data) == 0:
+        click.echo(f"ERROR: No accounts found in index '{index}'", err=True)
+        sys.exit(1)
+
+    if sort_col in numeric_cols | percent_cols:
+        sort_key = lambda acct: (acct.get(sort_col, -sys.maxsize), acct.get("account_id"),)
+    else:
+        sort_key = lambda acct: (acct.get(sort_col, chr(sys.maxunicode)), acct.get("account_id"),)
+    account_data.sort(key=sort_key, reverse=sort_reverse)
+
+    # Set col formats
+    col_format = {col: "" for col in columns}
+    for col in numeric_cols:
         col_format[col] = ",.1f"
-    for col in ["percent_cpu_credits_used", "percent_gpu_credits_used"]:
+    for col in percent_cols:
         col_format[col] = ".1%"
 
     # Get col sizes
@@ -124,16 +144,7 @@ def display_all_accounts(
     items = []
     for col, col_name in columns.items():
         val = col_name
-        if col in {
-            "cpu_credits",
-            "cpu_charges",
-            "remaining_cpu_credits",
-            "percent_cpu_credits_used",
-            "gpu_credits",
-            "gpu_charges",
-            "remaining_gpu_credits",
-            "percent_gpu_credits_used",
-        }:
+        if col in numeric_cols | percent_cols:
             val = f"{val}".rjust(col_size[col])
         else:
             val = f"{val}".ljust(col_size[col])
@@ -142,16 +153,7 @@ def display_all_accounts(
     for row in account_data:
         items = []
         for col in columns:
-            if col in {
-                "cpu_credits",
-                "cpu_charges",
-                "remaining_cpu_credits",
-                "percent_cpu_credits_used",
-                "gpu_credits",
-                "gpu_charges",
-                "remaining_gpu_credits",
-                "percent_gpu_credits_used",
-            }:
+            if col in numeric_cols | percent_cols:
                 val = row.get(col, 0)
                 val = f"{val:{col_format[col]}}".rjust(col_size[col])
             else:
