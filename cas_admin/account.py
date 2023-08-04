@@ -178,9 +178,14 @@ def add_account(
     """Adds account"""
 
     try:
-        credts = float(credts)
+        cpu_credts = float(cpu_credts)
     except ValueError:
-        click.echo(f"ERROR: Non-numeric credits provided: {credts}", err=True)
+        click.echo(f"ERROR: Non-numeric CPU credits provided: {cpu_credts}", err=True)
+
+    try:
+        gpu_credts = float(gpu_credts)
+    except ValueError:
+        click.echo(f"ERROR: Non-numeric GPU credits provided: {gpu_credts}", err=True)
 
     # Check existing
     if len(query_account(es_client, account=account, index=index)["hits"]["hits"]) > 0:
