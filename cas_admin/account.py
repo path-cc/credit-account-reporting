@@ -190,7 +190,7 @@ def add_account(
     # Check existing
     if len(query_account(es_client, account=account, index=index)["hits"]["hits"]) > 0:
         click.echo(
-            "ERROR: Existing account {account} already found in index {index}", err=True
+            f"ERROR: Existing account {account} already found in index {index}", err=True
         )
         sys.exit(1)
 
@@ -232,11 +232,11 @@ def edit_owner(
     # Check existing
     existing_account_results = query_account(es_client, account=account, index=index)
     if len(existing_account_results["hits"]["hits"]) == 0:
-        click.echo("ERROR: No existing account {account} in index {index}", err=True)
+        click.echo(f"ERROR: No existing account {account} in index {index}", err=True)
         sys.exit(1)
     if len(existing_account_results["hits"]["hits"]) > 1:
         click.echo(
-            "ERROR: Multiple accounts found for {account} in index {index}", err=True
+            f"ERROR: Multiple accounts found for {account} in index {index}", err=True
         )
         sys.exit(1)
 
@@ -271,11 +271,11 @@ def add_credits(es_client, account, credt_type, credts, index="cas-credit-accoun
     # Check existing
     existing_account_results = query_account(es_client, account=account, index=index)
     if len(existing_account_results["hits"]["hits"]) == 0:
-        click.echo("ERROR: No existing account {account} in index {index}", err=True)
+        click.echo(f"ERROR: No existing account {account} in index {index}", err=True)
         sys.exit(1)
     if len(existing_account_results["hits"]["hits"]) > 1:
         click.echo(
-            "ERROR: Multiple accounts found for {account} in index {index}", err=True
+            f"ERROR: Multiple accounts found for {account} in index {index}", err=True
         )
         sys.exit(1)
 
@@ -306,11 +306,11 @@ def edit_credits(es_client, account, credt_type, credts, index="cas-credit-accou
     # Check existing
     existing_account_results = query_account(es_client, account=account, index=index)
     if len(existing_account_results["hits"]["hits"]) == 0:
-        click.echo("ERROR: No existing account {account} in index {index}", err=True)
+        click.echo(f"ERROR: No existing account {account} in index {index}", err=True)
         sys.exit(1)
     if len(existing_account_results["hits"]["hits"]) > 1:
         click.echo(
-            "ERROR: Multiple accounts found for {account} in index {index}", err=True
+            f"ERROR: Multiple accounts found for {account} in index {index}", err=True
         )
         sys.exit(1)
 
@@ -341,11 +341,11 @@ def edit_charges(es_client, account, charge_type, charges, index="cas-credit-acc
     # Check existing
     existing_account_results = query_account(es_client, account=account, index=index)
     if len(existing_account_results["hits"]["hits"]) == 0:
-        click.echo("ERROR: No existing account {account} in index {index}", err=True)
+        click.echo(f"ERROR: No existing account {account} in index {index}", err=True)
         sys.exit(1)
     if len(existing_account_results["hits"]["hits"]) > 1:
         click.echo(
-            "ERROR: Multiple accounts found for {account} in index {index}", err=True
+            f"ERROR: Multiple accounts found for {account} in index {index}", err=True
         )
         sys.exit(1)
 
@@ -376,12 +376,12 @@ def add_charges(es_client, account, charge_type, charges, index="cas-credit-acco
     existing_account_results = query_account(es_client, account=account, index=index)
     if len(existing_account_results["hits"]["hits"]) == 0:
         click.echo(
-            "ERROR: No existing account '{account}' in index '{index}'", err=True
+            f"ERROR: No existing account '{account}' in index '{index}'", err=True
         )
         sys.exit(1)
     if len(existing_account_results["hits"]["hits"]) > 1:
         click.echo(
-            "ERROR: Multiple accounts found for '{account}' in index '{index}'",
+            f"ERROR: Multiple accounts found for '{account}' in index '{index}'",
             err=True,
         )
         sys.exit(1)
@@ -419,12 +419,12 @@ def update_total_charges(
         )
         if len(account_data["hits"]["hits"]) == 0:
             click.echo(
-                "ERROR: No existing account '{account}' in index '{index}'", err=True
+                f"""ERROR: No existing account '{charge["account_id"]}' in index '{account_index}'""", err=True
             )
             sys.exit(1)
         if len(account_data["hits"]["hits"]) > 1:
             click.echo(
-                "ERROR: Multiple accounts found for '{account}' in index '{index}'",
+                f"""ERROR: Multiple accounts found for '{charge["account_id"]}' in index '{account_index}'""",
                 err=True,
             )
             sys.exit(1)
@@ -437,7 +437,7 @@ def update_total_charges(
         charge_type = charge["charge_type"]
         if charge["date"] <= account_info[f"{charge_type}_last_charge_date"]:
             raise ValueError(
-                f"An added {charge_type} charge would come before or on last {charge_type} charge date on account '{account}'"
+                f"""An added {charge_type} charge would come before or on last {charge_type} charge date on account '{charge["account_id"]}'"""
             )
 
         # Modify account data
