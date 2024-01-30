@@ -40,9 +40,15 @@ Name                Owner         Project CpuCredits CpuCharges PctCpuUsed CpuRe
 PATh-Staff-Testing  Jason Patton  CHTC       1,100.0       69.4       6.3%   1,030.6        0.0        0.0       0.0%       0.0
 ```
 
-Create a new account "AliceGroup" for account owner "Alice Smith"
+Create a new account "AliceGroup" for account owner "Alice Smith" with CPU credits
 ```bash
 $ cas_admin create account AliceGroup --owner "Alice Smith" --project ABC123 --email alice.smith@uni.edu --cpu_credits 50
+account AliceGroup added.
+```
+
+Create a new account "AliceGroup" for account owner "Alice Smith" with CPU and GPU credits
+```bash
+$ cas_admin create account AliceGroup --owner "Alice Smith" --project ABC123 --email alice.smith@uni.edu --cpu_credits 50 --gpu_credits 50
 account AliceGroup added.
 ```
 
