@@ -1,6 +1,7 @@
 import click
 import xlsxwriter
 import json
+import time
 import smtplib
 import dns.resolver
 from operator import itemgetter
@@ -14,6 +15,55 @@ from pathlib import Path
 from cas_admin.account import get_account_data, get_charge_data
 
 
+def _smtp_mail(
+    msg, recipient, smtp_server=None, smtp_username=None, smtp_password=None
+):
+    sent = False
+    result = None
+    tries = 0
+    sleeptime = 0
+    while tries < 3 and sleeptime < 600:
+        try:
+            if smtp_username is None:
+                smtp = smtplib.SMTP(smtp_server)
+            else:
+                smtp = smtplib.SMTP_SSL(smtp_server)
+                smtp.login(smtp_username, smtp_password)
+        except Exception:
+            click.echo(f"Could not connect to SMTP server: {smtp_server}", err=True)
+            continue
+
+        try:
+            result = smtp.sendmail(msg["From"], recipient, msg.as_string())
+            if len(result) > 0:
+                click.echo(
+                    f"Could not send email to {recipient} using server {smtp_server}:\n{result}",
+                    err=True,
+                )
+            else:
+                sent = True
+        except Exception:
+            click.echo(
+                f"Could not send to {recipient} using server {smtp_server}", err=True
+            )
+        finally:
+            try:
+                smtp.quit()
+            except smtplib.SMTPServerDisconnected:
+                pass
+        if sent:
+            break
+
+        sleeptime = int(min(30 * 1.5**tries, 600))
+        time.sleep(sleeptime)
+        tries += 1
+
+    else:
+        logger.error(f"Failed to send email after {tries} loops")
+
+    return sent
+
+
 def send_email(
     from_addr,
     to_addrs=[],
@@ -23,6 +73,9 @@ def send_email(
     bcc_addrs=[],
     attachments=[],
     html="",
+    smtp_server=None,
+    smtp_username=None,
+    smtp_password_file=None,
 ):
     if len(to_addrs) == 0:
         click.echo("No recipients in the To: field, not sending email", err=True)
@@ -50,33 +103,41 @@ def send_email(
         part.add_header("Content-Disposition", "attachment", filename=path.name)
         msg.attach(part)
 
-    for recipient in to_addrs + cc_addrs + bcc_addrs:
-        domain = recipient.split("@")[1]
-        sent = False
-        result = None
-        for mx in dns.resolver.query(domain, "MX"):
-            mailserver = str(mx).split()[1][:-1]
-            try:
-                smtp = smtplib.SMTP(mailserver)
-                result = smtp.sendmail(from_addr, recipient, msg.as_string())
-                smtp.quit()
-            except Exception:
+    if smtp_server is not None:  # use SMTP
+        recipient = list(set(to_addrs + cc_addrs + bcc_addrs))
+        smtp_password = None
+        if smtp_password_file is not None:
+            smtp_password = smtp_password_file.open("r").read().strip()
+        _smtp_mail(msg, recipient, smtp_server, smtp_username, smtp_password)
+    else:  # lookup MX record and send emails directly
+        for recipient in to_addrs + cc_addrs + bcc_addrs:
+            domain = recipient.split("@")[1]
+            sent = False
+            result = None
+            for mx in dns.resolver.query(domain, "MX"):
+                mailserver = str(mx).split()[1][:-1]
+                try:
+                    smtp = smtplib.SMTP(mailserver)
+                    result = smtp.sendmail(from_addr, recipient, msg.as_string())
+                    smtp.quit()
+                except Exception:
+                    click.echo(
+                        f"WARNING: Could not send to {recipient} using {mailserver}",
+                        err=True,
+                    )
+                    if result is not None:
+                        click.echo(
+                            f"WARNING: Got result: {result} from {mailserver}", err=True
+                        )
+                else:
+                    sent = True
+                if sent:
+                    break
+            else:
                 click.echo(
-                    f"WARNING: Could not send to {recipient} using {mailserver}",
+                    f"ERROR: Could not send to {recipient} using any mailserver",
                     err=True,
                 )
-                if result is not None:
-                    click.echo(
-                        f"WARNING: Got result: {result} from {mailserver}", err=True
-                    )
-            else:
-                sent = True
-            if sent:
-                break
-        else:
-            click.echo(
-                f"ERROR: Could not send to {recipient} using any mailserver", err=True
-            )
 
 
 def generate_weekly_accounts_report(
@@ -346,7 +407,9 @@ def generate_weekly_account_owner_report(
                 if i_col == merge_to_col:
                     account_worksheet.write(i_row, i_col, val)
                 else:
-                    account_worksheet.merge_range(i_row, i_col, i_row, merge_to_col, val)
+                    account_worksheet.merge_range(
+                        i_row, i_col, i_row, merge_to_col, val
+                    )
             elif col in percent_cols:
                 val = row.get(col, 0) - last_row.get(col, 0)
                 html += f"""<td style="text-align: right; border: 1px solid black; padding: 4px">{val:+,.1f}%</td>"""
