@@ -27,6 +27,13 @@ IS_MONTHLY = date.today().day <= 7
 @click.option("--cc", "cc_addrs", multiple=True, default=[])
 @click.option("--bcc", "bcc_addrs", multiple=True, default=[])
 @click.option("--admin", "admin_addrs", multiple=True, default=[])
+@click.option("--smtp_server", type=str, default=None)
+@click.option("--smtp_username", type=str, default=None)
+@click.option(
+    "--smtp_password_file",
+    type=click.Path(exists=True, dir_okay=False, readable=True, path_type=Path),
+    default=None,
+)
 @click.option("--no_email_owners", "no_email_owners", is_flag=True)
 @click.option("--account", "account_ids", multiple=True, default=[])
 @click.option("--force", "force_send", is_flag=True)
@@ -64,6 +71,9 @@ def main(
     cc_addrs,
     bcc_addrs,
     admin_addrs,
+    smtp_server,
+    smtp_username,
+    smtp_password_file,
     no_email_owners,
     account_ids,
     force_send,
@@ -104,6 +114,9 @@ def main(
                     replyto_addr,
                     attachments=list(attachments.values()),
                     html=html,
+                    smtp_server=smtp_server,
+                    smtp_username=smtp_username,
+                    smtp_password_file=smtp_password_file,
                 )
         except Exception as e:
             error_str = f"Error while sending '{subject}':\n\t{str(e)}"

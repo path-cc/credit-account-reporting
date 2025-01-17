@@ -18,6 +18,13 @@ from cas_admin.email_utils import send_email, generate_weekly_accounts_report
 @click.option("--cc", "cc_addrs", multiple=True, default=[])
 @click.option("--bcc", "bcc_addrs", multiple=True, default=[])
 @click.option("--admin", "admin_addrs", multiple=True, default=[])
+@click.option("--smtp_server", type=str, default=None)
+@click.option("--smtp_username", type=str, default=None)
+@click.option(
+    "--smtp_password_file",
+    type=click.Path(exists=True, dir_okay=False, readable=True, path_type=Path),
+    default=None,
+)
 @click.option(
     "--account_index", envvar="CAS_ACCOUNT_INDEX", default="cas-credit-accounts"
 )
@@ -45,6 +52,9 @@ def main(
     cc_addrs,
     bcc_addrs,
     admin_addrs,
+    smtp_server,
+    smtp_username,
+    smtp_password_file,
 ):
     es_client = connect(es_host, es_user, es_pass, es_use_https, es_ca_certs)
 
@@ -67,6 +77,9 @@ def main(
             list(bcc_addrs),
             list(attachments.values()),
             html,
+            smtp_server,
+            smtp_username,
+            smtp_password_file,
         )
     except Exception as e:
         error_str = f"Error while sending '{subject}':\n\t{str(e)}"
